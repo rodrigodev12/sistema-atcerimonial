@@ -626,105 +626,50 @@ if not st.session_state.logado:
 # TELA DE LOGIN
 # ═══════════════════════════════════════════════════════════════════════════════
 if not st.session_state.logado:
-    # Estilos globais da tela de login
     st.markdown("""
     <style>
-    /* Esconde a sidebar e o header padrão na tela de login */
     section[data-testid="stSidebar"] { display: none !important; }
-    header[data-testid="stHeader"] { display: none !important; }
-    .stApp { background: #F1F5F9; }
-
-    /* Card de login centralizado */
-    .login-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 80vh;
-        padding: 16px;
-    }
-    .login-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 32px 28px 24px;
-        width: 100%;
-        max-width: 360px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-    }
-    .login-title {
-        text-align: center;
-        font-size: 26px;
-        font-weight: 700;
-        color: #0F172A;
-        margin-bottom: 2px;
-        font-family: 'Inter', sans-serif;
-    }
-    .login-sub {
-        text-align: center;
-        font-size: 13px;
-        color: #64748B;
-        margin-bottom: 20px;
-    }
-    .login-heading {
-        font-size: 18px;
-        font-weight: 600;
-        color: #0F172A;
-        margin-bottom: 16px;
-    }
-
-    /* Centraliza o botão de submit do formulário */
-    div[data-testid="stFormSubmitButton"] {
-        display: flex !important;
-        justify-content: center !important;
-        margin-top: 8px !important;
-    }
-    div[data-testid="stFormSubmitButton"] > button {
-        min-width: 160px !important;
-        width: auto !important;
-    }
-    .login-footer {
-        text-align: center;
-        font-size: 11px;
-        color: #94A3B8;
-        margin-top: 18px;
-    }
+    header[data-testid="stHeader"]   { display: none !important; }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="login-wrapper"><div class="login-card">', unsafe_allow_html=True)
-    st.markdown(
-        '<p class="login-title">💍 AT Cerimonial</p>'
-        '<p class="login-sub">Gestão Integrada de Eventos</p>'
-        '<p class="login-heading">Acesso Restrito</p>',
-        unsafe_allow_html=True,
-    )
+    _, col, _ = st.columns([1, 1, 1])
+    with col:
+        st.write("")
+        st.markdown(
+            "<h1 class='notranslate' style='text-align:center;font-size:28px;margin-bottom:2px;'>💍 AT Cerimonial</h1>"
+            "<p style='text-align:center;opacity:0.65;margin-bottom:12px;font-size:13px;'>Gestão Integrada de Eventos</p>",
+            unsafe_allow_html=True,
+        )
+        with st.container(border=True):
+            st.subheader("Acesso Restrito", divider=False)
+            with st.form("form_login"):
+                u = st.text_input("Usuário", key="li_user")
+                s = st.text_input("Senha", type="password", key="li_pass")
+                _, cb, _ = st.columns([1, 2, 1])
+                with cb:
+                    submitted = st.form_submit_button("Entrar no Painel")
 
-    with st.form("form_login"):
-        u = st.text_input("Usuário", key="li_user")
-        s = st.text_input("Senha", type="password", key="li_pass")
-        submitted = st.form_submit_button("Entrar no Painel")
+            if submitted:
+                usr = dados["usuarios"].get(u)
+                if usr and usr["senha"] == s:
+                    token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
+                    usr["sessao_token"] = token
+                    salvar_dados(dados)
+                    st.query_params["session"] = token
+                    st.session_state.update(
+                        logado=True, usuario=u,
+                        tipo_usuario=usr["tipo"],
+                        evento_id=usr.get("evento_id"),
+                    )
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha inválidos.")
 
-    if submitted:
-        usr = dados["usuarios"].get(u)
-        if usr and usr["senha"] == s:
-            token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
-            usr["sessao_token"] = token
-            salvar_dados(dados)
-            st.query_params["session"] = token
-            st.session_state.update(
-                logado=True, usuario=u,
-                tipo_usuario=usr["tipo"],
-                evento_id=usr.get("evento_id"),
-            )
-            st.rerun()
-        else:
-            st.error("Usuário ou senha inválidos.")
-
-    st.markdown(
-        '<p class="login-footer">AT Cerimonial © 2026</p>'
-        '</div></div>',
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            "<p style='text-align:center;font-size:11px;opacity:0.4;margin-top:14px;'>AT Cerimonial © 2026</p>",
+            unsafe_allow_html=True,
+        )
     st.stop()
 
 is_admin = st.session_state.tipo_usuario == "admin"
