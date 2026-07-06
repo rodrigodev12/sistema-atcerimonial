@@ -629,14 +629,11 @@ if not st.session_state.logado:
     # Estilo CSS para centralizar o botão de login de forma consistente (desktop e mobile)
     st.markdown("""
     <style>
-    div[data-testid="stButton"] {
-        display: flex;
-        justify-content: center;
-        margin-top: 12px;
-    }
-    div[data-testid="stButton"] button {
+    div[data-testid="stButton"] > button {
+        display: block !important;
+        margin: 12px auto 0 auto !important;
         width: auto !important;
-        min-width: 160px;
+        min-width: 160px !important;
     }
     </style>
     """, unsafe_allow_html=True)
