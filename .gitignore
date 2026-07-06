@@ -1,0 +1,19 @@
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+
+# Banco de dados local (será migrado para o Supabase)
+eventos_db.json
+
+# Configurações locais do Streamlit e secrets
+.streamlit/secrets.toml
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
