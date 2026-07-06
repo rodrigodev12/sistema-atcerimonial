@@ -626,6 +626,21 @@ if not st.session_state.logado:
 # TELA DE LOGIN
 # ═══════════════════════════════════════════════════════════════════════════════
 if not st.session_state.logado:
+    # Estilo CSS para centralizar o botão de login de forma consistente (desktop e mobile)
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"] {
+        display: flex;
+        justify-content: center;
+        margin-top: 12px;
+    }
+    div[data-testid="stButton"] button {
+        width: auto !important;
+        min-width: 160px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     _, col, _ = st.columns([1.2, 0.9, 1.2])
     with col:
         st.write("")
@@ -639,12 +654,7 @@ if not st.session_state.logado:
             u = st.text_input("Usuário", key="li_user")
             s = st.text_input("Senha", type="password", key="li_pass")
             
-            # Centraliza o botão de acesso
-            bc1, bc2, bc3 = st.columns([1, 2, 1])
-            with bc2:
-                btn_clicado = st.button("Entrar no Painel", key="btn_login")
-            
-            if btn_clicado:
+            if st.button("Entrar no Painel", key="btn_login"):
                 usr = dados["usuarios"].get(u)
                 if usr and usr["senha"] == s:
                     # Gera token de sessão e salva na base de dados
