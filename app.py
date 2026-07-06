@@ -527,15 +527,15 @@ def obter_link_acesso(ev_id: str) -> str:
         headers = _get_websocket_headers()
         if headers:
             host = headers.get("Host")
-            if host:
+            if host and "localhost" not in host and "127.0.0.1" not in host:
                 proto = headers.get("X-Forwarded-Proto", "https" if "streamlit.app" in host else "http")
                 return f"{proto}://{host}/?ev={ev_id}"
     except Exception:
         pass
     
-    if supabase_client:
-        return f"https://sistema-atcerimonial.streamlit.app/?ev={ev_id}"
-    return f"http://localhost:8501/?ev={ev_id}"
+    if os.name == 'nt':
+        return f"http://localhost:8501/?ev={ev_id}"
+    return f"https://sistema-atcerimonial.streamlit.app/?ev={ev_id}"
 
 
 
