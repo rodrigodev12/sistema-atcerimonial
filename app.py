@@ -521,6 +521,24 @@ def gerar_senha(n: int = 6) -> str:
     return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
 
+def obter_link_acesso(ev_id: str) -> str:
+    try:
+        from streamlit.web.server.websocket_headers import _get_websocket_headers
+        headers = _get_websocket_headers()
+        if headers:
+            host = headers.get("Host")
+            if host:
+                proto = headers.get("X-Forwarded-Proto", "https" if "streamlit.app" in host else "http")
+                return f"{proto}://{host}/?ev={ev_id}"
+    except Exception:
+        pass
+    
+    if supabase_client:
+        return f"https://sistema-atcerimonial.streamlit.app/?ev={ev_id}"
+    return f"http://localhost:8501/?ev={ev_id}"
+
+
+
 def exportar_excel(evento: dict) -> bytes:
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
@@ -668,18 +686,7 @@ with st.sidebar:
         )
         st.session_state.sel_ev = st.session_state.evento_id
 
-        # Tenta obter o host do cabeçalho da requisição
-        try:
-            from streamlit.web.server.websocket_headers import _get_websocket_headers
-            headers = _get_websocket_headers()
-            if headers:
-                host = headers.get("Host", "localhost:8501")
-                proto = headers.get("X-Forwarded-Proto", "http")
-                full_link = f"{proto}://{host}/?ev={st.session_state.evento_id}"
-            else:
-                full_link = f"http://localhost:8501/?ev={st.session_state.evento_id}"
-        except Exception:
-            full_link = f"http://localhost:8501/?ev={st.session_state.evento_id}"
+        full_link = obter_link_acesso(st.session_state.evento_id)
 
         # Exibe o link de acesso dos noivos para o evento ativo
         st.markdown("**🔗 Link de Acesso do Casal:**")
@@ -797,11 +804,12 @@ with st.sidebar:
         # Exibe credenciais do evento recém-criado
         if st.session_state.novo_ev_cred:
             c = st.session_state.novo_ev_cred
+            link_acesso = obter_link_acesso(c['ev_id'])
             st.success(
                 f"🎉 Evento de **{c['noivos']}** criado com sucesso!\n\n"
                 f"Envie o seguinte link de acesso aos noivos:\n"
-                f"[Clique aqui para abrir](/?ev={c['ev_id']})\n\n"
-                f"URL de acesso: `http://localhost:8501/?ev={c['ev_id']}`"
+                f"[Clique aqui para abrir]({link_acesso})\n\n"
+                f"URL de acesso: `{link_acesso}`"
             )
             if st.button("✖ Fechar", key="btn_close_cred"):
                 st.session_state.novo_ev_cred = None
