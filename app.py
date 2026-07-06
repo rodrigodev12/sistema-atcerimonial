@@ -626,20 +626,25 @@ if not st.session_state.logado:
 # TELA DE LOGIN
 # ═══════════════════════════════════════════════════════════════════════════════
 if not st.session_state.logado:
-    _, col, _ = st.columns([1, 1.1, 1])
+    _, col, _ = st.columns([1.2, 0.9, 1.2])
     with col:
         st.write("")
-        st.write("")
         st.markdown(
-            "<h1 class='notranslate' style='text-align:center; font-size:32px; margin-bottom:4px;'>💍 AT Cerimonial</h1>"
-            "<p style='text-align:center; opacity:0.65; margin-bottom:28px;'>Gestão Integrada de Eventos</p>",
+            "<h1 class='notranslate' style='text-align:center; font-size:28px; margin-bottom:2px;'>💍 AT Cerimonial</h1>"
+            "<p style='text-align:center; opacity:0.65; margin-bottom:16px; font-size:14px;'>Gestão Integrada de Eventos</p>",
             unsafe_allow_html=True,
         )
         with st.container(border=True):
             st.subheader("Acesso Restrito", divider=False)
             u = st.text_input("Usuário", key="li_user")
             s = st.text_input("Senha", type="password", key="li_pass")
-            if st.button("Entrar no Painel", key="btn_login"):
+            
+            # Centraliza o botão de acesso
+            bc1, bc2, bc3 = st.columns([1, 2, 1])
+            with bc2:
+                btn_clicado = st.button("Entrar no Painel", key="btn_login")
+            
+            if btn_clicado:
                 usr = dados["usuarios"].get(u)
                 if usr and usr["senha"] == s:
                     # Gera token de sessão e salva na base de dados
@@ -656,7 +661,7 @@ if not st.session_state.logado:
                 else:
                     st.error("Usuário ou senha inválidos.")
         st.markdown(
-            "<p class='notranslate' style='text-align:center; font-size:11px; opacity:0.45; margin-top:20px;'>AT Cerimonial © 2026</p>",
+            "<p class='notranslate' style='text-align:center; font-size:11px; opacity:0.45; margin-top:16px;'>AT Cerimonial © 2026</p>",
             unsafe_allow_html=True,
         )
     st.stop()
