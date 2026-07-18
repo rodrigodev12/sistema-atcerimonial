@@ -703,10 +703,25 @@ with st.sidebar:
         menu_icon="cast", 
         default_index=0,
         styles={
-            "container": {"padding": "0px!important", "background-color": "transparent"},
-            "icon": {"color": "#ef4444", "font-size": "14px"},
-            "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
-            "nav-link-selected": {"background-color": "#3b82f6"},
+            "container": {
+                "padding": "0px!important", 
+                "background-color": "transparent"
+            },
+            "icon": {
+                "color": "#ef4444",
+                "font-size": "14px"
+            }, 
+            "nav-link": {
+                "font-size": "14px", 
+                "text-align": "left", 
+                "margin": "0px", 
+                "color": "#ffffff",
+                "--hover-color": "rgba(255, 255, 255, 0.1)"
+            },
+            "nav-link-selected": {
+                "background-color": "#3b82f6",
+                "color": "#ffffff"
+            }
         }
     )
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
