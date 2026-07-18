@@ -703,7 +703,7 @@ with st.sidebar:
         menu_icon="cast", 
         default_index=0,
         styles={
-            "container": {"padding": "0!important", "background-color": "#fafafa"},
+            "container": {"padding": "0px!important", "background-color": "transparent"},
             "icon": {"color": "#ef4444", "font-size": "14px"},
             "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
             "nav-link-selected": {"background-color": "#3b82f6"},
