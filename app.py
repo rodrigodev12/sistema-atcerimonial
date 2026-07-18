@@ -1133,7 +1133,7 @@ with t_forn:
     gb.configure_default_column(editable=True, resizable=True, sortable=True, filter=True)
     
     # Configurações de colunas
-    gb.configure_column("SETOR", headerName="Setor", editable=False, pinned="left")
+    gb.configure_column("SETOR", headerName="Setor", editable=False)
     gb.configure_column("EMPRESA", headerName="Empresa")
     gb.configure_column("RESPONSÁVEL", headerName="Responsável")
     gb.configure_column("CEL/TEL", headerName="Cel/Tel")
@@ -1153,46 +1153,88 @@ with t_forn:
         update_mode=GridUpdateMode.VALUE_CHANGED,
         data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
         theme="alpine", # ou streamlit, balham, material
-        fit_columns_on_grid_load=True,
-        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+        height=450,
         allow_unsafe_jscode=True,
         key=f"ag_forn_{st.session_state.evento_id}"
     )
     
     df_edit = grid_response["data"]
 
-    if df_edit is not None and not df_edit.equals(df_view):
+    alterado = False
+    if df_edit is not None:
         # Mapeia as alterações de volta usando a coluna SETOR como chave única
         fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
         for _, row in df_edit.iterrows():
             setor = row["SETOR"]
             if setor in fornecedores_dict:
-                fornecedores_dict[setor]["EMPRESA"] = str(row.get("EMPRESA", "") or "").strip()
-                fornecedores_dict[setor]["RESPONSÁVEL"] = str(row.get("RESPONSÁVEL", "") or "").strip()
-                fornecedores_dict[setor]["CEL/TEL"] = str(row.get("CEL/TEL", "") or "").strip()
+                item = fornecedores_dict[setor]
                 
-                # Trata campos numéricos
+                # Normaliza valores para comparar
+                empresa_nova = str(row.get("EMPRESA", "") or "").strip()
+                resp_novo = str(row.get("RESPONSÁVEL", "") or "").strip()
+                tel_novo = str(row.get("CEL/TEL", "") or "").strip()
+                
                 try:
                     val = row.get("VALOR CONTRATO")
-                    fornecedores_dict[setor]["VALOR CONTRATO"] = float(val) if pd.notna(val) else 0.0
+                    val_novo = float(val) if pd.notna(val) else 0.0
                 except (ValueError, TypeError):
-                    fornecedores_dict[setor]["VALOR CONTRATO"] = 0.0
+                    val_novo = 0.0
                     
                 try:
                     he = row.get("HORA EXTRA")
-                    fornecedores_dict[setor]["HORA EXTRA"] = float(he) if pd.notna(he) else 0.0
+                    he_novo = float(he) if pd.notna(he) else 0.0
                 except (ValueError, TypeError):
-                    fornecedores_dict[setor]["HORA EXTRA"] = 0.0
+                    he_novo = 0.0
                     
-                fornecedores_dict[setor]["INSTAGRAM"] = str(row.get("INSTAGRAM", "") or "").strip()
-                fornecedores_dict[setor]["OBSERVAÇÃO"] = str(row.get("OBSERVAÇÃO", "") or "").strip()
-                fornecedores_dict[setor]["STATUS"] = str(row.get("STATUS", "Orçando") or "Orçando").strip()
+                insta_novo = str(row.get("INSTAGRAM", "") or "").strip()
+                obs_novo = str(row.get("OBSERVAÇÃO", "") or "").strip()
+                status_novo = str(row.get("STATUS", "Orçando") or "Orçando").strip()
+                
+                # Compara campo por campo
+                diffs = []
+                if item.get("EMPRESA", "") != empresa_nova:
+                    diffs.append(f"EMPRESA: '{item.get('EMPRESA', '')}' != '{empresa_nova}'")
+                if item.get("RESPONSÁVEL", "") != resp_novo:
+                    diffs.append(f"RESPONSÁVEL: '{item.get('RESPONSÁVEL', '')}' != '{resp_novo}'")
+                if item.get("CEL/TEL", "") != tel_novo:
+                    diffs.append(f"CEL/TEL: '{item.get('CEL/TEL', '')}' != '{tel_novo}'")
+                if abs(item.get("VALOR CONTRATO", 0.0) - val_novo) > 1e-5:
+                    diffs.append(f"VALOR CONTRATO: {item.get('VALOR CONTRATO', 0.0)} != {val_novo}")
+                if abs(item.get("HORA EXTRA", 0.0) - he_novo) > 1e-5:
+                    diffs.append(f"HORA EXTRA: {item.get('HORA EXTRA', 0.0)} != {he_novo}")
+                if item.get("INSTAGRAM", "") != insta_novo:
+                    diffs.append(f"INSTAGRAM: '{item.get('INSTAGRAM', '')}' != '{insta_novo}'")
+                if item.get("OBSERVAÇÃO", "") != obs_novo:
+                    diffs.append(f"OBSERVAÇÃO: '{item.get('OBSERVAÇÃO', '')}' != '{obs_novo}'")
+                if item.get("STATUS", "Orçando") != status_novo:
+                    diffs.append(f"STATUS: '{item.get('STATUS', 'Orçando')}' != '{status_novo}'")
+                
+                if diffs:
+                    print(f"[DEBUG AGGRID DIFF] Setor: {setor} | Diffs: {diffs}", flush=True)
+                    if "aggrid_debug_log" not in st.session_state:
+                        st.session_state["aggrid_debug_log"] = []
+                    st.session_state["aggrid_debug_log"].append(f"Setor {setor}: {diffs}")
+                    
+                    item["EMPRESA"] = empresa_nova
+                    item["RESPONSÁVEL"] = resp_novo
+                    item["CEL/TEL"] = tel_novo
+                    item["VALOR CONTRATO"] = val_novo
+                    item["HORA EXTRA"] = he_novo
+                    item["INSTAGRAM"] = insta_novo
+                    item["OBSERVAÇÃO"] = obs_novo
+                    item["STATUS"] = status_novo
+                    alterado = True
         
-        salvar_dados(dados)
-        st.toast("Fornecedores salvos!", icon="💾")
-        st.rerun()
+        if alterado:
+            salvar_dados(dados)
+            st.toast("Fornecedores salvos!", icon="💾")
+            st.rerun()
 
     st.caption("✨ As alterações na tabela de fornecedores são salvas automaticamente.")
+    
+    if "aggrid_debug_log" in st.session_state and st.session_state["aggrid_debug_log"]:
+        st.info("🐞 Debug Logs (últimas 5 alterações detectadas):")
+        st.write(st.session_state["aggrid_debug_log"][-5:])
 
     # Botão de exportar (visível em ambos os modos para quem tem acesso de edição)
     if is_admin or st.session_state.tipo_usuario == "cliente":
@@ -1280,7 +1322,7 @@ with t_forn:
         st.info("🔒 Visualização de acompanhamento. Edições são realizadas pelo cerimonial.")
         gb_ro = GridOptionsBuilder.from_dataframe(df_view)
         gb_ro.configure_default_column(editable=False, resizable=True, sortable=True, filter=True)
-        gb_ro.configure_column("SETOR", headerName="Setor", pinned="left")
+        gb_ro.configure_column("SETOR", headerName="Setor")
         gb_ro.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency)
         gb_ro.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency)
         gb_ro.configure_grid_options(getRowStyle=get_row_style)
@@ -1289,8 +1331,7 @@ with t_forn:
             df_view,
             gridOptions=gb_ro.build(),
             theme="alpine",
-            fit_columns_on_grid_load=True,
-            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+            height=450,
             allow_unsafe_jscode=True,
             key=f"ag_forn_ro_{st.session_state.evento_id}"
         )
