@@ -1151,8 +1151,8 @@ with t_forn:
         df_view,
         gridOptions=gridOptions,
         update_mode=GridUpdateMode.VALUE_CHANGED,
-        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-        theme="alpine", # ou streamlit, balham, material
+        data_return_mode=DataReturnMode.AS_INPUT,
+        theme="alpine",
         height=450,
         allow_unsafe_jscode=True,
         key=f"ag_forn_{st.session_state.evento_id}"
@@ -1160,81 +1160,63 @@ with t_forn:
     
     df_edit = grid_response["data"]
 
-    alterado = False
-    if df_edit is not None:
-        # Mapeia as alterações de volta usando a coluna SETOR como chave única
+    # ── Botão explícito de salvar ──────────────────────────────────────────────
+    col_salvar, _ = st.columns([2, 10])
+    with col_salvar:
+        btn_salvar = st.button("💾 Salvar Alterações", key="btn_salvar_forn", type="primary")
+
+    if btn_salvar and df_edit is not None:
+        alterado = False
         fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
         for _, row in df_edit.iterrows():
             setor = row["SETOR"]
             if setor in fornecedores_dict:
                 item = fornecedores_dict[setor]
                 
-                # Normaliza valores para comparar
                 empresa_nova = str(row.get("EMPRESA", "") or "").strip()
-                resp_novo = str(row.get("RESPONSÁVEL", "") or "").strip()
-                tel_novo = str(row.get("CEL/TEL", "") or "").strip()
+                resp_novo    = str(row.get("RESPONSÁVEL", "") or "").strip()
+                tel_novo     = str(row.get("CEL/TEL", "") or "").strip()
                 
                 try:
-                    val = row.get("VALOR CONTRATO")
+                    val     = row.get("VALOR CONTRATO")
                     val_novo = float(val) if pd.notna(val) else 0.0
                 except (ValueError, TypeError):
                     val_novo = 0.0
                     
                 try:
-                    he = row.get("HORA EXTRA")
+                    he      = row.get("HORA EXTRA")
                     he_novo = float(he) if pd.notna(he) else 0.0
                 except (ValueError, TypeError):
                     he_novo = 0.0
                     
-                insta_novo = str(row.get("INSTAGRAM", "") or "").strip()
-                obs_novo = str(row.get("OBSERVAÇÃO", "") or "").strip()
+                insta_novo  = str(row.get("INSTAGRAM", "") or "").strip()
+                obs_novo    = str(row.get("OBSERVAÇÃO", "") or "").strip()
                 status_novo = str(row.get("STATUS", "Orçando") or "Orçando").strip()
                 
-                # Compara campo por campo
-                diffs = []
-                if item.get("EMPRESA", "") != empresa_nova:
-                    diffs.append(f"EMPRESA: '{item.get('EMPRESA', '')}' != '{empresa_nova}'")
-                if item.get("RESPONSÁVEL", "") != resp_novo:
-                    diffs.append(f"RESPONSÁVEL: '{item.get('RESPONSÁVEL', '')}' != '{resp_novo}'")
-                if item.get("CEL/TEL", "") != tel_novo:
-                    diffs.append(f"CEL/TEL: '{item.get('CEL/TEL', '')}' != '{tel_novo}'")
-                if abs(item.get("VALOR CONTRATO", 0.0) - val_novo) > 1e-5:
-                    diffs.append(f"VALOR CONTRATO: {item.get('VALOR CONTRATO', 0.0)} != {val_novo}")
-                if abs(item.get("HORA EXTRA", 0.0) - he_novo) > 1e-5:
-                    diffs.append(f"HORA EXTRA: {item.get('HORA EXTRA', 0.0)} != {he_novo}")
-                if item.get("INSTAGRAM", "") != insta_novo:
-                    diffs.append(f"INSTAGRAM: '{item.get('INSTAGRAM', '')}' != '{insta_novo}'")
-                if item.get("OBSERVAÇÃO", "") != obs_novo:
-                    diffs.append(f"OBSERVAÇÃO: '{item.get('OBSERVAÇÃO', '')}' != '{obs_novo}'")
-                if item.get("STATUS", "Orçando") != status_novo:
-                    diffs.append(f"STATUS: '{item.get('STATUS', 'Orçando')}' != '{status_novo}'")
-                
-                if diffs:
-                    print(f"[DEBUG AGGRID DIFF] Setor: {setor} | Diffs: {diffs}", flush=True)
-                    if "aggrid_debug_log" not in st.session_state:
-                        st.session_state["aggrid_debug_log"] = []
-                    st.session_state["aggrid_debug_log"].append(f"Setor {setor}: {diffs}")
+                if (item.get("EMPRESA", "")        != empresa_nova or
+                    item.get("RESPONSÁVEL", "")     != resp_novo    or
+                    item.get("CEL/TEL", "")         != tel_novo     or
+                    abs(item.get("VALOR CONTRATO", 0.0) - val_novo) > 1e-5 or
+                    abs(item.get("HORA EXTRA", 0.0)     - he_novo)  > 1e-5 or
+                    item.get("INSTAGRAM", "")       != insta_novo   or
+                    item.get("OBSERVAÇÃO", "")      != obs_novo     or
+                    item.get("STATUS", "Orçando")   != status_novo):
                     
-                    item["EMPRESA"] = empresa_nova
-                    item["RESPONSÁVEL"] = resp_novo
-                    item["CEL/TEL"] = tel_novo
+                    item["EMPRESA"]        = empresa_nova
+                    item["RESPONSÁVEL"]    = resp_novo
+                    item["CEL/TEL"]        = tel_novo
                     item["VALOR CONTRATO"] = val_novo
-                    item["HORA EXTRA"] = he_novo
-                    item["INSTAGRAM"] = insta_novo
-                    item["OBSERVAÇÃO"] = obs_novo
-                    item["STATUS"] = status_novo
+                    item["HORA EXTRA"]     = he_novo
+                    item["INSTAGRAM"]      = insta_novo
+                    item["OBSERVAÇÃO"]     = obs_novo
+                    item["STATUS"]         = status_novo
                     alterado = True
         
         if alterado:
             salvar_dados(dados)
-            st.toast("Fornecedores salvos!", icon="💾")
-            st.rerun()
-
-    st.caption("✨ As alterações na tabela de fornecedores são salvas automaticamente.")
-    
-    if "aggrid_debug_log" in st.session_state and st.session_state["aggrid_debug_log"]:
-        st.info("🐞 Debug Logs (últimas 5 alterações detectadas):")
-        st.write(st.session_state["aggrid_debug_log"][-5:])
+            st.success("✅ Fornecedores salvos com sucesso!")
+        else:
+            st.info("Nenhuma alteração detectada.")
 
     # Botão de exportar (visível em ambos os modos para quem tem acesso de edição)
     if is_admin or st.session_state.tipo_usuario == "cliente":
