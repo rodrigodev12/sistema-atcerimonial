@@ -1080,21 +1080,14 @@ with t_brief:
 with t_forn:
     st.markdown(f"### Alinhamento com Fornecedores — {evento_atual['noivos']}")
 
-    # Filtros e Toggle de Edição
-    cf1, cf2, cf3 = st.columns([2.5, 2.5, 5])
+    # Filtros
+    cf1, cf2 = st.columns(2)
     with cf1:
         filtro = st.selectbox(
             "Filtrar por status", ["Todos"] + STATUS_OPCOES, key="filt_status"
         )
     with cf2:
         busca = st.text_input("Buscar setor / empresa", placeholder="Digite…", key="busca_forn")
-    with cf3:
-        st.write("")
-        st.write("")
-        if is_admin or st.session_state.tipo_usuario == "cliente":
-            modo_edicao = st.toggle("✏️ Modo Edição", value=False, key="toggle_edit_forn")
-        else:
-            modo_edicao = False
 
     # Monta DataFrame completo preservando índices originais
     df_full = pd.DataFrame(evento_atual["fornecedores"])
@@ -1144,112 +1137,27 @@ with t_forn:
                 styles.append(estilo_base)
         return styles
 
-    if modo_edicao:
-        df_edit = st.data_editor(
-            df_view,
-            column_config=col_cfg,
-            hide_index=True,
-            use_container_width=True,
-            num_rows="fixed",
-            key=f"ed_forn_{st.session_state.evento_id}",
-        )
+    df_edit = st.data_editor(
+        df_view,
+        column_config=col_cfg,
+        hide_index=True,
+        use_container_width=True,
+        num_rows="fixed",
+        key=f"ed_forn_{st.session_state.evento_id}",
+    )
 
-        if not df_edit.equals(df_view):
-            idx_vis = df_view.index.tolist()
-            for i, orig_idx in enumerate(idx_vis):
-                for col in df_full.columns:
-                    if col != "SETOR":
-                        df_full.at[orig_idx, col] = df_edit.iloc[i][col]
-            evento_atual["fornecedores"] = df_full.to_dict(orient="records")
-            salvar_dados(dados)
-            st.toast("Fornecedores salvos!", icon="💾")
-            st.rerun()
+    if not df_edit.equals(df_view):
+        idx_vis = df_view.index.tolist()
+        for i, orig_idx in enumerate(idx_vis):
+            for col in df_full.columns:
+                if col != "SETOR":
+                    df_full.at[orig_idx, col] = df_edit.iloc[i][col]
+        evento_atual["fornecedores"] = df_full.to_dict(orient="records")
+        salvar_dados(dados)
+        st.toast("Fornecedores salvos!", icon="💾")
+        st.rerun()
 
-        st.caption("✨ As alterações na tabela de fornecedores são salvas automaticamente.")
-    else:
-        # Se for admin, exibe a tabela profissional. Se for cliente (noivos), exibe cards visuais responsivos.
-        if is_admin:
-            st.dataframe(
-                df_view.style.apply(colorir_linhas, axis=1),
-                column_config=col_cfg,
-                hide_index=True,
-                use_container_width=True,
-            )
-        else:
-            # ── Vista de Cards para Noivos (UX mobile-first) ──────────────────────
-            STATUS_ICONE = {
-                "Orçando":                                             ("🔴", "#FEE2E2", "#991B1B"),
-                "Dados enviados":                                      ("🔵", "#DBEAFE", "#1E40AF"),
-                "Contrato recebido":                                   ("🟡", "#FEF3C7", "#92400E"),
-                "Análise concluída / liberado para assinatura":        ("🟣", "#F3E8FF", "#6B21A8"),
-                "Aguardando assinatura do CONTRATADO":                 ("🩵", "#ECFEFF", "#155E75"),
-                "CONTRATADO":                                          ("✅", "#D1FAE5", "#065F46"),
-                "Não haverá":                                          ("⚫", "#F1F5F9", "#475569"),
-            }
-
-            # Mini legenda de status
-            st.markdown("<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;'>"
-                + "".join([
-                    f"<span style='background:{bg_color};color:{fg_color};border-radius:20px;"
-                    f"padding:3px 10px;font-size:12px;font-weight:600;'>{icone} {s}</span>"
-                    for s, (icone, bg_color, fg_color) in STATUS_ICONE.items()
-                ])
-                + "</div>", unsafe_allow_html=True)
-
-            if df_view.empty:
-                st.info("Nenhum fornecedor encontrado com os filtros aplicados.")
-            else:
-                for _, row in df_view.iterrows():
-                    status = row.get("STATUS", "Orçando")
-                    icone, bg, fg = STATUS_ICONE.get(status, ("⚪", "#F8FAFC", "#334155"))
-                    empresa = row.get("EMPRESA", "") or "Não definida"
-                    resp = row.get("RESPONSÁVEL", "") or ""
-                    tel = row.get("CEL/TEL", "") or ""
-                    insta = row.get("INSTAGRAM", "") or ""
-                    obs = row.get("OBSERVAÇÃO", "") or ""
-                    valor = row.get("VALOR CONTRATO", 0) or 0
-                    hora_extra = row.get("HORA EXTRA", 0) or 0
-
-                    card_html = f"""
-                    <div style='
-                        background:{bg};
-                        border-left:4px solid {fg};
-                        border-radius:10px;
-                        padding:14px 18px;
-                        margin-bottom:10px;
-                        box-shadow:0 1px 4px rgba(0,0,0,0.06);
-                    '>
-                      <div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;'>
-                        <div>
-                          <div style='font-size:15px;font-weight:700;color:{fg};margin-bottom:4px;'>
-                            📍 {row['SETOR']}
-                          </div>
-                          <div style='font-size:14px;color:#1E293B;margin-bottom:2px;'>
-                            🏢 <b>{empresa}</b>
-                          </div>
-                          {'<div style="font-size:13px;color:#475569;">👤 ' + resp + '</div>' if resp else ''}
-                          {'<div style="font-size:13px;color:#475569;">📞 ' + tel + '</div>' if tel else ''}
-                          {'<div style="font-size:13px;color:#7C3AED;">📸 ' + insta + '</div>' if insta else ''}
-                          {'<div style="font-size:13px;color:#64748B;margin-top:4px;"><i>' + obs + '</i></div>' if obs else ''}
-                        </div>
-                        <div style='text-align:right;'>
-                          <div style='
-                              background:{fg};
-                              color:white;
-                              border-radius:20px;
-                              padding:4px 12px;
-                              font-size:12px;
-                              font-weight:700;
-                              white-space:nowrap;
-                              margin-bottom:8px;
-                          '>{icone} {status}</div>
-                          {('<div style="font-size:16px;font-weight:700;color:' + fg + ';">' + f'R$ {valor:,.2f}'.replace(',','X').replace('.',',').replace('X','.') + '</div><div style="font-size:11px;color:#94A3B8;">valor contrato</div>') if valor > 0 else ''}
-                          {('<div style="font-size:13px;color:#D97706;margin-top:4px;">⏰ Hora extra: R$ ' + f'{hora_extra:,.2f}'.replace(',','X').replace('.',',').replace('X','.') + '</div>') if hora_extra > 0 else ''}
-                        </div>
-                      </div>
-                    </div>
-                    """
-                    st.markdown(card_html, unsafe_allow_html=True)
+    st.caption("✨ As alterações na tabela de fornecedores são salvas automaticamente.")
 
     # Botão de exportar (visível em ambos os modos para quem tem acesso de edição)
     if is_admin or st.session_state.tipo_usuario == "cliente":
