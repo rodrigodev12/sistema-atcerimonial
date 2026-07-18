@@ -1190,9 +1190,9 @@ with t_forn:
             # Mini legenda de status
             st.markdown("<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;'>"
                 + "".join([
-                    f"<span style='background:{cor[1]};color:{cor[2]};border-radius:20px;"
+                    f"<span style='background:{bg_color};color:{fg_color};border-radius:20px;"
                     f"padding:3px 10px;font-size:12px;font-weight:600;'>{icone} {s}</span>"
-                    for s, (icone, *cor) in STATUS_ICONE.items()
+                    for s, (icone, bg_color, fg_color) in STATUS_ICONE.items()
                 ])
                 + "</div>", unsafe_allow_html=True)
 
