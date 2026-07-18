@@ -696,6 +696,24 @@ with st.sidebar:
         opcoes_menu.insert(2, "Checklist Cerimonial")
         icones_menu.insert(2, "journal-check")
 
+    # Injeção de CSS para forçar o fundo do menu a sumir de verdade
+    st.markdown("""
+        <style>
+        /* Remove o fundo branco do container do menu */
+        .nav-pills {
+            background-color: transparent !important;
+        }
+        /* Garante que o texto das abas não selecionadas fique visível e branco */
+        .nav-link {
+            color: #ffffff !important;
+        }
+        /* Força o texto da aba selecionada a continuar branco */
+        .nav-link.active {
+            color: #ffffff !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     aba_selecionada = option_menu(
         menu_title=None,
         options=opcoes_menu,
@@ -705,22 +723,22 @@ with st.sidebar:
         styles={
             "container": {
                 "padding": "0px!important", 
-                "background-color": "transparent"
+                "background-color": "transparent!important"
             },
             "icon": {
-                "color": "#ef4444",
+                "color": "#ffffff",
                 "font-size": "14px"
             }, 
             "nav-link": {
                 "font-size": "14px", 
                 "text-align": "left", 
                 "margin": "0px", 
-                "color": "#ffffff",
+                "color": "#ffffff!important",
                 "--hover-color": "rgba(255, 255, 255, 0.1)"
             },
             "nav-link-selected": {
                 "background-color": "#3b82f6",
-                "color": "#ffffff"
+                "color": "#ffffff!important"
             }
         }
     )
