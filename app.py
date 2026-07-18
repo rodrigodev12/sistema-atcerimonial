@@ -705,15 +705,8 @@ with st.sidebar:
         styles={
             "container": {"padding": "0px!important", "background-color": "transparent"},
             "icon": {"color": "#ef4444", "font-size": "14px"},
-            "nav-link": {
-                "font-size": "14px",
-                "text-align": "left",
-                "margin": "0px",
-                "background-color": "transparent",
-                "color": "#f8f9fa",
-                "--hover-color": "#202e44",
-            },
-            "nav-link-selected": {"background-color": "#3b82f6", "color": "#ffffff"},
+            "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
+            "nav-link-selected": {"background-color": "#3b82f6"},
         }
     )
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
