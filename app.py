@@ -689,6 +689,28 @@ with st.sidebar:
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
+    # Menu de navegação lateral dinâmico
+    opcoes_menu = ["Dashboard", "Briefing", "Checklist Noivos", "Fornecedores", "Roteiro"]
+    icones_menu = ["graph-up", "file-earmark-person", "heart-fill", "people-fill", "stopwatch"]
+    if is_admin:
+        opcoes_menu.insert(2, "Checklist Cerimonial")
+        icones_menu.insert(2, "journal-check")
+
+    aba_selecionada = option_menu(
+        menu_title=None,
+        options=opcoes_menu,
+        icons=icones_menu,
+        menu_icon="cast", 
+        default_index=0,
+        styles={
+            "container": {"padding": "0!important", "background-color": "#fafafa"},
+            "icon": {"color": "#ef4444", "font-size": "14px"},
+            "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
+            "nav-link-selected": {"background-color": "#3b82f6"},
+        }
+    )
+    st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
+
     if is_admin:
         lista_ev = list(dados["eventos"].keys())
         # Valida sel_ev
@@ -878,29 +900,7 @@ with st.sidebar:
 evento_atual = get_ev(dados, st.session_state.evento_id)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ABAS
-# ═══════════════════════════════════════════════════════════════════════════════
-if is_admin:
-    options = ["Dashboard", "Briefing", "Checklist Cerimonial", "Checklist Noivos", "Fornecedores", "Roteiro"]
-    icons = ["graph-up", "file-earmark-person", "journal-check", "heart-fill", "people-fill", "stopwatch"]
-else:
-    options = ["Dashboard", "Briefing", "Checklist Noivos", "Fornecedores", "Roteiro"]
-    icons = ["graph-up", "file-earmark-person", "heart-fill", "people-fill", "stopwatch"]
 
-aba_selecionada = option_menu(
-    menu_title=None,
-    options=options,
-    icons=icons,
-    menu_icon="cast",
-    default_index=0,
-    orientation="horizontal",
-    styles={
-        "container": {"padding": "0!important", "background-color": "#fafafa"},
-        "icon": {"color": "#ef4444", "font-size": "14px"},
-        "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
-        "nav-link-selected": {"background-color": "#3b82f6"},
-    }
-)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 0 — DASHBOARD
