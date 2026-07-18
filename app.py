@@ -690,26 +690,25 @@ with st.sidebar:
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
     # Menu de navegação lateral dinâmico (Streamlit Antd Components)
-    opcoes_menu = [
-        sac.TabsItem(label='Dashboard', icon='bar-chart-steps'),
-        sac.TabsItem(label='Briefing', icon='file-text'),
+    itens_menu = [
+        sac.MenuItem('Dashboard', icon='bar-chart-steps'),
+        sac.MenuItem('Briefing', icon='file-text'),
     ]
 
     if is_admin:
-        opcoes_menu.append(sac.TabsItem(label='Checklist Cerimonial', icon='check-square'))
+        itens_menu.append(sac.MenuItem('Checklist Cerimonial', icon='check-square'))
 
-    opcoes_menu.extend([
-        sac.TabsItem(label='Checklist Noivos', icon='heart'),
-        sac.TabsItem(label='Fornecedores', icon='shop'),
-        sac.TabsItem(label='Roteiro', icon='clock'),
+    itens_menu.extend([
+        sac.MenuItem('Checklist Noivos', icon='heart'),
+        sac.MenuItem('Fornecedores', icon='shop'),
+        sac.MenuItem('Roteiro', icon='clock'),
     ])
 
-    aba_selecionada = sac.tabs(
-        opcoes_menu, 
-        align='start', 
-        variant='light', 
-        size='md',
-        index=0
+    aba_selecionada = sac.menu(
+        itens_menu,
+        format_func=lambda x: x,
+        variant='filled',
+        open_all=True
     )
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
