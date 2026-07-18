@@ -9,7 +9,7 @@ import string
 import secrets
 from itertools import groupby
 from supabase import create_client, Client
-from streamlit_option_menu import option_menu
+import streamlit_antd_components as sac
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -689,60 +689,29 @@ with st.sidebar:
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
-    # Menu de navegação lateral dinâmico
-    opcoes_menu = ["Dashboard", "Briefing", "Checklist Noivos", "Fornecedores", "Roteiro"]
-    icones_menu = ["graph-up", "file-earmark-person", "heart-fill", "people-fill", "stopwatch"]
+    # Menu de navegação lateral dinâmico (Streamlit Antd Components)
+    opcoes_menu = [
+        sac.TabsItem(label='Dashboard', icon='bar-chart-steps'),
+        sac.TabsItem(label='Briefing', icon='file-text'),
+    ]
+
     if is_admin:
-        opcoes_menu.insert(2, "Checklist Cerimonial")
-        icones_menu.insert(2, "journal-check")
+        opcoes_menu.append(sac.TabsItem(label='Checklist Cerimonial', icon='check-square'))
 
-    # Injeção de CSS para forçar o fundo do menu a sumir de verdade
-    st.markdown("""
-        <style>
-        /* Remove o fundo branco do container do menu */
-        .nav-pills {
-            background-color: transparent !important;
-        }
-        /* Garante que o texto das abas não selecionadas fique visível e branco */
-        .nav-link {
-            color: #ffffff !important;
-        }
-        /* Força o texto da aba selecionada a continuar branco */
-        .nav-link.active {
-            color: #ffffff !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    opcoes_menu.extend([
+        sac.TabsItem(label='Checklist Noivos', icon='heart'),
+        sac.TabsItem(label='Fornecedores', icon='shop'),
+        sac.TabsItem(label='Roteiro', icon='clock'),
+    ])
 
-    aba_selecionada = option_menu(
-        menu_title=None,
-        options=opcoes_menu,
-        icons=icones_menu,
-        menu_icon="cast", 
-        default_index=0,
-        styles={
-            "container": {
-                "padding": "0px!important", 
-                "background-color": "transparent!important"
-            },
-            "icon": {
-                "color": "#ffffff",
-                "font-size": "14px"
-            }, 
-            "nav-link": {
-                "font-size": "14px", 
-                "text-align": "left", 
-                "margin": "0px", 
-                "color": "#ffffff!important",
-                "--hover-color": "rgba(255, 255, 255, 0.1)"
-            },
-            "nav-link-selected": {
-                "background-color": "#3b82f6",
-                "color": "#ffffff!important"
-            }
-        }
+    aba_selecionada = sac.tabs(
+        opcoes_menu, 
+        align='start', 
+        variant='light', 
+        size='md',
+        index=0
     )
-    st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
     if is_admin:
         lista_ev = list(dados["eventos"].keys())
