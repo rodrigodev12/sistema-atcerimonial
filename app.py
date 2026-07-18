@@ -707,7 +707,8 @@ with st.sidebar:
     aba_selecionada = sac.menu(
         itens_menu,
         format_func=lambda x: x,
-        variant='filled',
+        variant='light',
+        color='dark',
         open_all=True
     )
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
