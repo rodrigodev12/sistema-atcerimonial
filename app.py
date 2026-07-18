@@ -9,6 +9,8 @@ import string
 import secrets
 from itertools import groupby
 from supabase import create_client, Client
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, ColumnsAutoSizeMode, JsCode
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -1103,56 +1105,89 @@ with t_forn:
 
     widths = evento_atual.get("col_widths", LARGURAS_PADRAO)
 
-    col_cfg = {
-        "SETOR":          st.column_config.TextColumn("Setor",        disabled=True, width=widths.get("SETOR", 180), pinned=True),
-        "EMPRESA":        st.column_config.TextColumn("Empresa",      width=widths.get("EMPRESA", 180)),
-        "RESPONSÁVEL":    st.column_config.TextColumn("Responsável",  width=widths.get("RESPONSÁVEL", 150)),
-        "CEL/TEL":        st.column_config.TextColumn("Cel/Tel",      width=widths.get("CEL/TEL", 120)),
-        "VALOR CONTRATO": st.column_config.NumberColumn("Valor Contrato", format="R$ %.2f", width=widths.get("VALOR CONTRATO", 120)),
-        "HORA EXTRA":     st.column_config.NumberColumn("Hora Extra (R$)", format="R$ %.2f", width=widths.get("HORA EXTRA", 120)),
-        "INSTAGRAM":      st.column_config.TextColumn("Instagram",    width=widths.get("INSTAGRAM", 120)),
-        "OBSERVAÇÃO":     st.column_config.TextColumn("Observação",   width=widths.get("OBSERVAÇÃO", 300)),
-        "STATUS":         st.column_config.SelectboxColumn("Status",  options=STATUS_OPCOES, required=True, width=widths.get("STATUS", 180)),
+    # ── Código Javascript compartilhado para o AgGrid ─────────────────────────
+    format_currency = JsCode("""
+    function(params) {
+        if (params.value == null) return '';
+        return params.value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
     }
+    """)
 
-    # Função para colorir linhas no DataFrame de acordo com o status
-    def colorir_linhas(row):
-        status = row.get("STATUS", "Orçando")
-        cores_fundo = {
-            "Orçando":                                              "background-color: #FEE2E2; color: #991B1B;",
-            "Dados enviados":                                       "background-color: #DBEAFE; color: #1E40AF;",
-            "Contrato recebido":                                    "background-color: #FEF3C7; color: #92400E;",
-            "Análise concluída / liberado para assinatura":         "background-color: #F3E8FF; color: #6B21A8;",
-            "Aguardando assinatura do CONTRATADO":                  "background-color: #ECFEFF; color: #155E75;",
-            "CONTRATADO":                                           "background-color: #D1FAE5; color: #065F46;",
-            "Não haverá":                                           "background-color: #F1F5F9; color: #475569;",
-        }
-        estilo_base = cores_fundo.get(status, "")
-        
-        styles = []
-        for col in row.index:
-            if col == "SETOR":
-                styles.append(estilo_base + " font-weight: bold;")
-            else:
-                styles.append(estilo_base)
-        return styles
+    get_row_style = JsCode("""
+    function(params) {
+        if (!params.data) return null;
+        var status = params.data.STATUS;
+        if (status === 'Orçando') return {'background-color': '#FEE2E2', 'color': '#991B1B'};
+        if (status === 'Dados enviados') return {'background-color': '#DBEAFE', 'color': '#1E40AF'};
+        if (status === 'Contrato recebido') return {'background-color': '#FEF3C7', 'color': '#92400E'};
+        if (status === 'Análise concluída / liberado para assinatura') return {'background-color': '#F3E8FF', 'color': '#6B21A8'};
+        if (status === 'Aguardando assinatura do CONTRATADO') return {'background-color': '#ECFEFF', 'color': '#155E75'};
+        if (status === 'CONTRATADO') return {'background-color': '#D1FAE5', 'color': '#065F46'};
+        if (status === 'Não haverá') return {'background-color': '#F1F5F9', 'color': '#475569'};
+        return null;
+    }
+    """)
 
-    df_edit = st.data_editor(
+    # ── Configuração do AgGrid ────────────────────────────────────────────────
+    gb = GridOptionsBuilder.from_dataframe(df_view)
+    gb.configure_default_column(editable=True, resizable=True, sortable=True, filter=True)
+    
+    # Configurações de colunas
+    gb.configure_column("SETOR", headerName="Setor", editable=False, pinned="left")
+    gb.configure_column("EMPRESA", headerName="Empresa")
+    gb.configure_column("RESPONSÁVEL", headerName="Responsável")
+    gb.configure_column("CEL/TEL", headerName="Cel/Tel")
+    gb.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency)
+    gb.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency)
+    gb.configure_column("INSTAGRAM", headerName="Instagram")
+    gb.configure_column("OBSERVAÇÃO", headerName="Observação")
+    gb.configure_column("STATUS", headerName="Status", cellEditor="agSelectCellEditor", cellEditorParams={"values": STATUS_OPCOES})
+    
+    gb.configure_grid_options(getRowStyle=get_row_style)
+    
+    gridOptions = gb.build()
+    
+    grid_response = AgGrid(
         df_view,
-        column_config=col_cfg,
-        hide_index=True,
-        use_container_width=True,
-        num_rows="fixed",
-        key=f"ed_forn_{st.session_state.evento_id}",
+        gridOptions=gridOptions,
+        update_mode=GridUpdateMode.VALUE_CHANGED,
+        data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
+        theme="alpine", # ou streamlit, balham, material
+        fit_columns_on_grid_load=True,
+        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+        allow_unsafe_jscode=True,
+        key=f"ag_forn_{st.session_state.evento_id}"
     )
+    
+    df_edit = grid_response["data"]
 
-    if not df_edit.equals(df_view):
-        idx_vis = df_view.index.tolist()
-        for i, orig_idx in enumerate(idx_vis):
-            for col in df_full.columns:
-                if col != "SETOR":
-                    df_full.at[orig_idx, col] = df_edit.iloc[i][col]
-        evento_atual["fornecedores"] = df_full.to_dict(orient="records")
+    if df_edit is not None and not df_edit.equals(df_view):
+        # Mapeia as alterações de volta usando a coluna SETOR como chave única
+        fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
+        for _, row in df_edit.iterrows():
+            setor = row["SETOR"]
+            if setor in fornecedores_dict:
+                fornecedores_dict[setor]["EMPRESA"] = str(row.get("EMPRESA", "") or "").strip()
+                fornecedores_dict[setor]["RESPONSÁVEL"] = str(row.get("RESPONSÁVEL", "") or "").strip()
+                fornecedores_dict[setor]["CEL/TEL"] = str(row.get("CEL/TEL", "") or "").strip()
+                
+                # Trata campos numéricos
+                try:
+                    val = row.get("VALOR CONTRATO")
+                    fornecedores_dict[setor]["VALOR CONTRATO"] = float(val) if pd.notna(val) else 0.0
+                except (ValueError, TypeError):
+                    fornecedores_dict[setor]["VALOR CONTRATO"] = 0.0
+                    
+                try:
+                    he = row.get("HORA EXTRA")
+                    fornecedores_dict[setor]["HORA EXTRA"] = float(he) if pd.notna(he) else 0.0
+                except (ValueError, TypeError):
+                    fornecedores_dict[setor]["HORA EXTRA"] = 0.0
+                    
+                fornecedores_dict[setor]["INSTAGRAM"] = str(row.get("INSTAGRAM", "") or "").strip()
+                fornecedores_dict[setor]["OBSERVAÇÃO"] = str(row.get("OBSERVAÇÃO", "") or "").strip()
+                fornecedores_dict[setor]["STATUS"] = str(row.get("STATUS", "Orçando") or "Orçando").strip()
+        
         salvar_dados(dados)
         st.toast("Fornecedores salvos!", icon="💾")
         st.rerun()
@@ -1243,11 +1278,21 @@ with t_forn:
                         st.rerun()
     else:
         st.info("🔒 Visualização de acompanhamento. Edições são realizadas pelo cerimonial.")
-        st.dataframe(
-            df_view.style.apply(colorir_linhas, axis=1),
-            column_config=col_cfg,
-            hide_index=True,
-            use_container_width=True,
+        gb_ro = GridOptionsBuilder.from_dataframe(df_view)
+        gb_ro.configure_default_column(editable=False, resizable=True, sortable=True, filter=True)
+        gb_ro.configure_column("SETOR", headerName="Setor", pinned="left")
+        gb_ro.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency)
+        gb_ro.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency)
+        gb_ro.configure_grid_options(getRowStyle=get_row_style)
+        
+        AgGrid(
+            df_view,
+            gridOptions=gb_ro.build(),
+            theme="alpine",
+            fit_columns_on_grid_load=True,
+            columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+            allow_unsafe_jscode=True,
+            key=f"ag_forn_ro_{st.session_state.evento_id}"
         )
 
 # ───────────────────────────────────────────────────────────────────────────────
