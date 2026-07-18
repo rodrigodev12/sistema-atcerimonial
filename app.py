@@ -9,7 +9,7 @@ import string
 import secrets
 from itertools import groupby
 from supabase import create_client, Client
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, ColumnsAutoSizeMode, JsCode
+from streamlit_option_menu import option_menu
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -881,28 +881,31 @@ evento_atual = get_ev(dados, st.session_state.evento_id)
 # ABAS
 # ═══════════════════════════════════════════════════════════════════════════════
 if is_admin:
-    t_dash, t_brief, t_cerim, t_noivos, t_forn, t_rot = st.tabs([
-        "📊 Dashboard",
-        "📝 Briefing",
-        "📋 Checklist Cerimonial",
-        "💍 Checklist Noivos",
-        "🤝 Fornecedores",
-        "⏱️ Roteiro",
-    ])
+    options = ["Dashboard", "Briefing", "Checklist Cerimonial", "Checklist Noivos", "Fornecedores", "Roteiro"]
+    icons = ["graph-up", "file-earmark-person", "journal-check", "heart-fill", "people-fill", "stopwatch"]
 else:
-    t_dash, t_brief, t_noivos, t_forn, t_rot = st.tabs([
-        "📊 Dashboard",
-        "📝 Briefing",
-        "💍 Checklist Noivos",
-        "🤝 Fornecedores",
-        "⏱️ Roteiro",
-    ])
-    t_cerim = None
+    options = ["Dashboard", "Briefing", "Checklist Noivos", "Fornecedores", "Roteiro"]
+    icons = ["graph-up", "file-earmark-person", "heart-fill", "people-fill", "stopwatch"]
+
+aba_selecionada = option_menu(
+    menu_title=None,
+    options=options,
+    icons=icons,
+    menu_icon="cast",
+    default_index=0,
+    orientation="horizontal",
+    styles={
+        "container": {"padding": "0!important", "background-color": "#fafafa"},
+        "icon": {"color": "#ef4444", "font-size": "14px"},
+        "nav-link": {"font-size": "14px", "text-align": "left", "margin":"0px", "--hover-color": "#eee"},
+        "nav-link-selected": {"background-color": "#3b82f6"},
+    }
+)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 0 — DASHBOARD
 # ───────────────────────────────────────────────────────────────────────────────
-with t_dash:
+if aba_selecionada == "Dashboard":
     st.markdown(f"### Dashboard — {evento_atual['noivos']}  ·  📅 {evento_atual['data']}")
 
     # ⏳ Contagem Regressiva
@@ -1011,7 +1014,7 @@ with t_dash:
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB — BRIEFING INICIAL
 # ───────────────────────────────────────────────────────────────────────────────
-with t_brief:
+if aba_selecionada == "Briefing":
     st.markdown(f"### Briefing Inicial — {evento_atual['noivos']}")
     briefing = get_briefing(evento_atual)
 
@@ -1079,7 +1082,7 @@ with t_brief:
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 1 — FORNECEDORES
 # ───────────────────────────────────────────────────────────────────────────────
-with t_forn:
+if aba_selecionada == "Fornecedores":
     st.markdown(f"### Alinhamento com Fornecedores — {evento_atual['noivos']}")
 
     # Filtros
@@ -1284,8 +1287,8 @@ with t_forn:
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 2 — CHECKLIST MÊS A MÊS
 # ───────────────────────────────────────────────────────────────────────────────
-if is_admin and t_cerim:
-    with t_cerim:
+if is_admin and aba_selecionada == "Checklist Cerimonial":
+    if True:
         st.markdown(f"### Checklist Cerimonial — {evento_atual['noivos']}")
         
         if is_admin:
@@ -1387,7 +1390,7 @@ if is_admin and t_cerim:
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB — CHECKLIST NOIVOS
 # ───────────────────────────────────────────────────────────────────────────────
-with t_noivos:
+if aba_selecionada == "Checklist Noivos":
     st.markdown(f"### Checklist Noivos — {evento_atual['noivos']}")
     
     if is_admin:
@@ -1489,7 +1492,7 @@ with t_noivos:
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 4 — ROTEIRO E CRONOGRAMA
 # ───────────────────────────────────────────────────────────────────────────────
-with t_rot:
+if aba_selecionada == "Roteiro":
     st.markdown(f"### Roteiro do Evento — {evento_atual['noivos']}")
     roteiro = evento_atual.get("roteiro", [r.copy() for r in ROTEIRO_PADRAO])
     df_rot  = pd.DataFrame(roteiro)
