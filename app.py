@@ -6,6 +6,7 @@ import os
 import io
 import random
 import string
+import secrets
 from itertools import groupby
 from supabase import create_client, Client
 
@@ -329,11 +330,16 @@ LARGURAS_PADRAO = {
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def gerar_link_token() -> str:
+    return secrets.token_hex(12)
+
+
 def _novo_evento(noivos: str, data: str) -> dict:
     """Cria estrutura completa de um novo evento."""
     return {
         "noivos": noivos,
         "data": data,
+        "link_token": gerar_link_token(),
         "fornecedores": [
             {"SETOR": s, "EMPRESA": "", "RESPONSÁVEL": "", "CEL/TEL": "",
              "HORA EXTRA": 0.0, "VALOR CONTRATO": 0.0, "INSTAGRAM": "", "OBSERVAÇÃO": "", "STATUS": "Orçando"}
@@ -466,6 +472,11 @@ def carregar_dados() -> dict:
                     if pd.isna(val) or val is None:
                         item["feito"] = False
                         modificado = True
+                        
+        # 4. Garantir link_token aleatório para o evento
+        if "link_token" not in ev:
+            ev["link_token"] = gerar_link_token()
+            modificado = True
             
     if modificado:
         salvar_dados(dados)
@@ -522,6 +533,15 @@ def gerar_senha(n: int = 6) -> str:
 
 
 def obter_link_acesso(ev_id: str) -> str:
+    # Resolve o token de acesso (link_token) a partir do ev_id
+    token = ev_id
+    try:
+        if 'dados' in globals() and isinstance(dados, dict) and "eventos" in dados:
+            if ev_id in dados["eventos"]:
+                token = dados["eventos"][ev_id].get("link_token", ev_id)
+    except Exception:
+        pass
+
     try:
         from streamlit.web.server.websocket_headers import _get_websocket_headers
         headers = _get_websocket_headers()
@@ -529,13 +549,13 @@ def obter_link_acesso(ev_id: str) -> str:
             host = headers.get("Host")
             if host and "localhost" not in host and "127.0.0.1" not in host:
                 proto = headers.get("X-Forwarded-Proto", "https" if "streamlit.app" in host else "http")
-                return f"{proto}://{host}/?ev={ev_id}"
+                return f"{proto}://{host}/?ev={token}"
     except Exception:
         pass
     
     if os.name == 'nt':
-        return f"http://localhost:8501/?ev={ev_id}"
-    return f"https://sistema-atcerimonial.streamlit.app/?ev={ev_id}"
+        return f"http://localhost:8501/?ev={token}"
+    return f"https://sistema-atcerimonial.streamlit.app/?ev={token}"
 
 
 
@@ -587,41 +607,29 @@ for k, v in _ss_defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# Recupera sessão por link direto do evento (ex: ?ev=ev_01) ou por parâmetro de sessão (F5)
+# Recupera sessão por link direto do evento (ex: ?ev=cx78a2e9b) ou por parâmetro de sessão (F5)
 if not st.session_state.logado:
     # 1. Verifica se está acessando via link direto de evento
     ev_id_url = st.query_params.get("evento") or st.query_params.get("ev")
-    if ev_id_url and ev_id_url in dados.get("eventos", {}):
-        st.session_state.update(
-            logado=True,
-            usuario=f"noivos_{ev_id_url}",
-            tipo_usuario="cliente",
-            evento_id=ev_id_url,
-        )
-        st.rerun()
-    
-    # 2. Verifica sessão do admin persistida (F5)
-    token_url = st.query_params.get("session")
-    if token_url:
-        usuario_encontrado = None
-        for u_name, u_info in dados.get("usuarios", {}).items():
-            if u_info.get("sessao_token") == token_url:
-                usuario_encontrado = (u_name, u_info)
+    if ev_id_url:
+        evento_encontrado_id = None
+        for ev_id, ev in dados.get("eventos", {}).items():
+            if ev.get("link_token") == ev_id_url or ev_id == ev_id_url:
+                evento_encontrado_id = ev_id
                 break
         
-        if usuario_encontrado:
-            u_name, u_info = usuario_encontrado
+        if evento_encontrado_id:
             st.session_state.update(
                 logado=True,
-                usuario=u_name,
-                tipo_usuario=u_info["tipo"],
-                evento_id=u_info.get("evento_id"),
+                usuario=f"noivos_{evento_encontrado_id}",
+                tipo_usuario="cliente",
+                evento_id=evento_encontrado_id,
             )
             st.rerun()
-        else:
-            if "session" in st.query_params:
-                del st.query_params["session"]
-
+else:
+    # Se já está logado, garante que a URL fique limpa e sem tokens de sessão expostos
+    if "session" in st.query_params:
+        del st.query_params["session"]
 # ═══════════════════════════════════════════════════════════════════════════════
 # TELA DE LOGIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -653,10 +661,7 @@ if not st.session_state.logado:
             if submitted:
                 usr = dados["usuarios"].get(u)
                 if usr and usr["senha"] == s:
-                    token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
-                    usr["sessao_token"] = token
-                    salvar_dados(dados)
-                    st.query_params["session"] = token
+                    st.query_params.clear()
                     st.session_state.update(
                         logado=True, usuario=u,
                         tipo_usuario=usr["tipo"],
@@ -860,10 +865,6 @@ with st.sidebar:
 
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
     if st.button("🚪 Sair do Sistema", key="btn_logout"):
-        u_name = st.session_state.usuario
-        if u_name in dados.get("usuarios", {}):
-            dados["usuarios"][u_name].pop("sessao_token", None)
-            salvar_dados(dados)
         st.query_params.clear()
         for k in ["logado", "usuario", "tipo_usuario", "evento_id", "sel_ev", "novo_ev_cred"]:
             st.session_state[k] = False if k == "logado" else None

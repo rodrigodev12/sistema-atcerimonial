@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 from supabase import create_client
 
 def migrate():
@@ -24,6 +25,18 @@ def migrate():
         with open(db_file, "r", encoding="utf-8") as f:
             dados = json.load(f)
             
+        # Garante tokens de acesso aleatórios para cada evento
+        modificado = False
+        for ev_id, ev in dados.get("eventos", {}).items():
+            if "link_token" not in ev:
+                ev["link_token"] = secrets.token_hex(12)
+                modificado = True
+        
+        if modificado:
+            with open(db_file, "w", encoding="utf-8") as f:
+                json.dump(dados, f, indent=2, ensure_ascii=False)
+            print("  ↳ Tokens de acesso gerados e salvos localmente.")
+
         print("[3/3] Sincronizando dados com a nuvem...")
         
         # Tenta atualizar o registro existente
