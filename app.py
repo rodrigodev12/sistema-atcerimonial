@@ -1091,7 +1091,7 @@ with t_forn:
     with cf2:
         busca = st.text_input("Buscar setor / empresa", placeholder="Digite…", key="busca_forn")
 
-    # Monta DataFrame completo preservando índices originais
+    # Monta DataFrame completo
     df_full = pd.DataFrame(evento_atual["fornecedores"])
     df_view = df_full.copy()
 
@@ -1103,252 +1103,183 @@ with t_forn:
             df_view["EMPRESA"].str.contains(busca, case=False, na=False)
         ]
 
-    widths = evento_atual.get("col_widths", LARGURAS_PADRAO)
-
-    # ── Código Javascript compartilhado para o AgGrid ─────────────────────────
-    format_currency = JsCode("""
-    function(params) {
-        if (params.value == null) return '';
-        return params.value.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+    # ── Mapeamento de cores por status ────────────────────────────────────────
+    STATUS_CORES = {
+        "Orçando":                                     {"bg": "#FEE2E2", "text": "#991B1B", "border": "#FECACA",  "emoji": "🔴"},
+        "Dados enviados":                               {"bg": "#DBEAFE", "text": "#1E40AF", "border": "#BFDBFE",  "emoji": "🔵"},
+        "Contrato recebido":                            {"bg": "#FEF3C7", "text": "#92400E", "border": "#FDE68A",  "emoji": "🟡"},
+        "Análise concluída / liberado para assinatura": {"bg": "#F3E8FF", "text": "#6B21A8", "border": "#E9D5FF",  "emoji": "🟣"},
+        "Aguardando assinatura do CONTRATADO":          {"bg": "#ECFEFF", "text": "#155E75", "border": "#A5F3FC",  "emoji": "🩵"},
+        "CONTRATADO":                                   {"bg": "#D1FAE5", "text": "#065F46", "border": "#6EE7B7",  "emoji": "🟢"},
+        "Não haverá":                                   {"bg": "#F1F5F9", "text": "#475569", "border": "#CBD5E1",  "emoji": "⚪"},
     }
-    """)
-
-    get_row_style = JsCode("""
-    function(params) {
-        if (!params.data) return null;
-        var status = params.data.STATUS;
-        if (status === 'Orçando') return {'background-color': '#FEE2E2', 'color': '#991B1B'};
-        if (status === 'Dados enviados') return {'background-color': '#DBEAFE', 'color': '#1E40AF'};
-        if (status === 'Contrato recebido') return {'background-color': '#FEF3C7', 'color': '#92400E'};
-        if (status === 'Análise concluída / liberado para assinatura') return {'background-color': '#F3E8FF', 'color': '#6B21A8'};
-        if (status === 'Aguardando assinatura do CONTRATADO') return {'background-color': '#ECFEFF', 'color': '#155E75'};
-        if (status === 'CONTRATADO') return {'background-color': '#D1FAE5', 'color': '#065F46'};
-        if (status === 'Não haverá') return {'background-color': '#F1F5F9', 'color': '#475569'};
-        return null;
-    }
-    """)
-
-    # ── Configuração do AgGrid ────────────────────────────────────────────────
-    # Estilo de célula com borda vertical (linha separadora entre colunas)
-    col_border_style = JsCode("""
-    function(params) {
-        return {
-            'border-right': '1px solid #CBD5E1',
-            'border-left': '1px solid #CBD5E1'
-        };
-    }
-    """)
-
-    gb = GridOptionsBuilder.from_dataframe(df_view)
-    gb.configure_default_column(
-        editable=True, resizable=True, sortable=True, filter=True,
-        cellStyle=col_border_style
-    )
-
-    # Configurações de colunas
-    gb.configure_column("SETOR", headerName="Setor", editable=False, cellStyle=col_border_style)
-    gb.configure_column("EMPRESA", headerName="Empresa", cellStyle=col_border_style)
-    gb.configure_column("RESPONSÁVEL", headerName="Responsável", cellStyle=col_border_style)
-    gb.configure_column("CEL/TEL", headerName="Cel/Tel", cellStyle=col_border_style)
-    gb.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency, cellStyle=col_border_style)
-    gb.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency, cellStyle=col_border_style)
-    gb.configure_column("INSTAGRAM", headerName="Instagram", cellStyle=col_border_style)
-    gb.configure_column("OBSERVAÇÃO", headerName="Observação", cellStyle=col_border_style)
-    gb.configure_column("STATUS", headerName="Status", cellEditor="agSelectCellEditor", cellEditorParams={"values": STATUS_OPCOES}, cellStyle=col_border_style)
-
-    gb.configure_grid_options(
-        getRowStyle=get_row_style,
-        suppressColumnVirtualisation=True,
-        rowHeight=36,
-        headerHeight=40,
-    )
-
-    gridOptions = gb.build()
-    
-    grid_response = AgGrid(
-        df_view,
-        gridOptions=gridOptions,
-        update_mode=GridUpdateMode.VALUE_CHANGED,
-        data_return_mode=DataReturnMode.AS_INPUT,
-        theme="alpine",
-        height=450,
-        allow_unsafe_jscode=True,
-        key=f"ag_forn_{st.session_state.evento_id}"
-    )
-    
-    df_edit = grid_response["data"]
 
     # ── Legenda de cores ───────────────────────────────────────────────────────
-    st.markdown("""
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px 0; align-items:center;">
-        <span style="font-size:12px; font-weight:600; color:#64748B; margin-right:4px;">Legenda:</span>
-        <span style="background:#FEE2E2; color:#991B1B; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #FECACA;">🔴 Orçando</span>
-        <span style="background:#DBEAFE; color:#1E40AF; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #BFDBFE;">🔵 Dados enviados</span>
-        <span style="background:#FEF3C7; color:#92400E; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #FDE68A;">🟡 Contrato recebido</span>
-        <span style="background:#F3E8FF; color:#6B21A8; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #E9D5FF;">🟣 Liberado p/ assinatura</span>
-        <span style="background:#ECFEFF; color:#155E75; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #A5F3FC;">🩵 Ag. assinatura contratado</span>
-        <span style="background:#D1FAE5; color:#065F46; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #6EE7B7;">🟢 CONTRATADO</span>
-        <span style="background:#F1F5F9; color:#475569; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #CBD5E1;">⚪ Não haverá</span>
-    </div>
-    """, unsafe_allow_html=True)
+    badges_html = " ".join([
+        f'<span style="background:{c["bg"]};color:{c["text"]};border:1px solid {c["border"]};'
+        f'border-radius:6px;padding:2px 9px;font-size:11px;font-weight:500;white-space:nowrap;">'
+        f'{c["emoji"]} {s}</span>'
+        for s, c in STATUS_CORES.items()
+    ])
+    st.markdown(
+        f'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;">'
+        f'<span style="font-size:12px;font-weight:600;color:#64748B;margin-right:2px;">Legenda:</span>'
+        f'{badges_html}</div>',
+        unsafe_allow_html=True,
+    )
 
-    # ── Botão explícito de salvar ──────────────────────────────────────────────
-    col_salvar, _ = st.columns([2, 10])
-    with col_salvar:
-        btn_salvar = st.button("💾 Salvar Alterações", key="btn_salvar_forn", type="primary")
+    # ── Cards de fornecedores ──────────────────────────────────────────────────
+    can_edit = is_admin or st.session_state.tipo_usuario == "cliente"
+    fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
 
-    if btn_salvar and df_edit is not None:
-        alterado = False
-        fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
-        for _, row in df_edit.iterrows():
-            setor = row["SETOR"]
-            if setor in fornecedores_dict:
-                item = fornecedores_dict[setor]
-                
-                empresa_nova = str(row.get("EMPRESA", "") or "").strip()
-                resp_novo    = str(row.get("RESPONSÁVEL", "") or "").strip()
-                tel_novo     = str(row.get("CEL/TEL", "") or "").strip()
-                
-                try:
-                    val     = row.get("VALOR CONTRATO")
-                    val_novo = float(val) if pd.notna(val) else 0.0
-                except (ValueError, TypeError):
-                    val_novo = 0.0
-                    
-                try:
-                    he      = row.get("HORA EXTRA")
-                    he_novo = float(he) if pd.notna(he) else 0.0
-                except (ValueError, TypeError):
-                    he_novo = 0.0
-                    
-                insta_novo  = str(row.get("INSTAGRAM", "") or "").strip()
-                obs_novo    = str(row.get("OBSERVAÇÃO", "") or "").strip()
-                status_novo = str(row.get("STATUS", "Orçando") or "Orçando").strip()
-                
-                if (item.get("EMPRESA", "")        != empresa_nova or
-                    item.get("RESPONSÁVEL", "")     != resp_novo    or
-                    item.get("CEL/TEL", "")         != tel_novo     or
-                    abs(item.get("VALOR CONTRATO", 0.0) - val_novo) > 1e-5 or
-                    abs(item.get("HORA EXTRA", 0.0)     - he_novo)  > 1e-5 or
-                    item.get("INSTAGRAM", "")       != insta_novo   or
-                    item.get("OBSERVAÇÃO", "")      != obs_novo     or
-                    item.get("STATUS", "Orçando")   != status_novo):
-                    
-                    item["EMPRESA"]        = empresa_nova
-                    item["RESPONSÁVEL"]    = resp_novo
-                    item["CEL/TEL"]        = tel_novo
-                    item["VALOR CONTRATO"] = val_novo
-                    item["HORA EXTRA"]     = he_novo
-                    item["INSTAGRAM"]      = insta_novo
-                    item["OBSERVAÇÃO"]     = obs_novo
-                    item["STATUS"]         = status_novo
-                    alterado = True
-        
-        if alterado:
-            salvar_dados(dados)
-            st.success("✅ Fornecedores salvos com sucesso!")
-        else:
-            st.info("Nenhuma alteração detectada.")
+    for forn in df_view.to_dict("records"):
+        setor   = forn["SETOR"]
+        status  = forn.get("STATUS") or "Orçando"
+        cor     = STATUS_CORES.get(status, {"bg": "#F8FAFC", "text": "#334155", "border": "#CBD5E1", "emoji": "❔"})
+        empresa = forn.get("EMPRESA", "") or ""
+        resp    = forn.get("RESPONSÁVEL", "") or ""
+        tel     = forn.get("CEL/TEL", "") or ""
+        insta   = forn.get("INSTAGRAM", "") or ""
 
-    # Botão de exportar (visível em ambos os modos para quem tem acesso de edição)
-    if is_admin or st.session_state.tipo_usuario == "cliente":
-        st.write("")
-        cb1, _ = st.columns([2.5, 9.5])
-        with cb1:
-            excel_bytes = exportar_excel(evento_atual)
-            st.download_button(
-                "📥 Exportar Excel",
-                data=excel_bytes,
-                file_name=f"AT_{evento_atual['noivos'].replace(' ', '_').replace('&','e')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_forn",
+        # Format values for display
+        try:
+            val_fmt = f"R$ {float(forn.get('VALOR CONTRATO', 0) or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            val_fmt = "R$ 0,00"
+        try:
+            he_fmt = f"R$ {float(forn.get('HORA EXTRA', 0) or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            he_fmt = "R$ 0,00"
+
+        # Expandable header label
+        label = f"{cor['emoji']} {setor}" + (f" — {empresa}" if empresa else " — (Pendente)")
+        with st.expander(label, expanded=False):
+            # Badge status display
+            st.markdown(
+                f'<div style="background:{cor["bg"]};border:1px solid {cor["border"]};'
+                f'border-radius:8px;padding:6px 12px;margin-bottom:12px;display:inline-block;">'
+                f'<span style="color:{cor["text"]};font-size:12px;font-weight:600;">'
+                f'{cor["emoji"]} {status}</span></div>',
+                unsafe_allow_html=True,
             )
 
-        if is_admin:
-            # ⚙️ Expander para ajustar largura das colunas (em pixels)
-            with st.expander("⚙️ Ajustar Largura das Colunas (em pixels)"):
-                st.markdown("<small>Use os controles abaixo para definir a largura de cada coluna. As alterações são aplicadas e salvas automaticamente.</small>", unsafe_allow_html=True)
-                
-                new_widths = {}
-                cols_width_selectors = st.columns(3)
-                with cols_width_selectors[0]:
-                    new_widths["SETOR"] = st.number_input("Setor", min_value=50, max_value=800, value=int(widths.get("SETOR", 180)), step=10, key="w_setor")
-                    new_widths["EMPRESA"] = st.number_input("Empresa", min_value=50, max_value=800, value=int(widths.get("EMPRESA", 180)), step=10, key="w_empresa")
-                    new_widths["RESPONSÁVEL"] = st.number_input("Responsável", min_value=50, max_value=800, value=int(widths.get("RESPONSÁVEL", 150)), step=10, key="w_resp")
-                with cols_width_selectors[1]:
-                    new_widths["CEL/TEL"] = st.number_input("Cel/Tel", min_value=50, max_value=800, value=int(widths.get("CEL/TEL", 120)), step=10, key="w_cel")
-                    new_widths["VALOR CONTRATO"] = st.number_input("Valor Contrato", min_value=50, max_value=800, value=int(widths.get("VALOR CONTRATO", 120)), step=10, key="w_val")
-                    new_widths["HORA EXTRA"] = st.number_input("Hora Extra", min_value=50, max_value=800, value=int(widths.get("HORA EXTRA", 120)), step=10, key="w_hora")
-                with cols_width_selectors[2]:
-                    new_widths["INSTAGRAM"] = st.number_input("Instagram", min_value=50, max_value=800, value=int(widths.get("INSTAGRAM", 120)), step=10, key="w_inst")
-                    new_widths["OBSERVAÇÃO"] = st.number_input("Observação", min_value=50, max_value=1200, value=int(widths.get("OBSERVAÇÃO", 300)), step=10, key="w_obs")
-                    new_widths["STATUS"] = st.number_input("Status", min_value=50, max_value=800, value=int(widths.get("STATUS", 180)), step=10, key="w_status")
-                
-                if any(new_widths[k] != widths.get(k) for k in LARGURAS_PADRAO):
-                    evento_atual["col_widths"] = new_widths
-                    salvar_dados(dados)
-                    st.toast("Largura das colunas atualizada!", icon="⚙️")
-                    st.rerun()
-
-            # ➕/❌ Gerenciar Linhas (Setores de Fornecedores)
-            with st.expander("➕ / 🗑️ Adicionar ou Excluir Linhas (Setores)"):
-                st.markdown("<small>Adicione novos setores ou exclua setores existentes da sua lista de fornecedores.</small>", unsafe_allow_html=True)
-                
-                c_add, c_del = st.columns(2)
-                with c_add:
-                    st.markdown("**Adicionar Setor**")
-                    nome_novo_setor = st.text_input("Nome do Setor", placeholder="Ex: Banda Extra, Barman...", key="add_setor_name")
-                    if st.button("➕ Adicionar Setor", key="btn_add_setor"):
-                        if nome_novo_setor.strip():
-                            # Verifica duplicados
-                            setores_existentes = [f["SETOR"].strip().lower() for f in evento_atual["fornecedores"]]
-                            if nome_novo_setor.strip().lower() in setores_existentes:
-                                st.error("Este setor já existe.")
-                            else:
-                                novo_forn = {
-                                    "SETOR": nome_novo_setor.strip(),
-                                    "EMPRESA": "",
-                                    "RESPONSÁVEL": "",
-                                    "CEL/TEL": "",
-                                    "VALOR CONTRATO": 0.0,
-                                    "HORA EXTRA": 0.0,
-                                    "INSTAGRAM": "",
-                                    "OBSERVAÇÃO": "",
-                                    "STATUS": "Orçando"
-                                }
-                                evento_atual["fornecedores"].append(novo_forn)
-                                salvar_dados(dados)
-                                st.toast(f"Setor '{nome_novo_setor}' adicionado com sucesso!", icon="🎉")
-                                st.rerun()
-                        else:
-                            st.warning("Digite o nome do setor.")
-                
-                with c_del:
-                    st.markdown("**Excluir Setor**")
-                    setores_lista = [f["SETOR"] for f in evento_atual["fornecedores"]]
-                    setor_para_excluir = st.selectbox("Selecione o Setor para Excluir", setores_lista, key="del_setor_name")
-                    if st.button("🗑️ Excluir Setor Selecionado", key="btn_del_setor"):
-                        evento_atual["fornecedores"] = [f for f in evento_atual["fornecedores"] if f["SETOR"] != setor_para_excluir]
+            if can_edit:
+                with st.form(key=f"form_forn_{setor}_{st.session_state.evento_id}"):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        nova_empresa = st.text_input("🏢 Empresa",     value=empresa, key=f"emp_{setor}")
+                        novo_resp    = st.text_input("👤 Responsável", value=resp,    key=f"resp_{setor}")
+                        novo_tel     = st.text_input("📞 Cel/Tel",     value=tel,     key=f"tel_{setor}")
+                        novo_insta   = st.text_input("📸 Instagram",   value=insta,   key=f"ig_{setor}")
+                    with c2:
+                        novo_status = st.selectbox(
+                            "📌 Status", STATUS_OPCOES,
+                            index=STATUS_OPCOES.index(status) if status in STATUS_OPCOES else 0,
+                            key=f"st_{setor}"
+                        )
+                        try:
+                            val_atual = float(forn.get("VALOR CONTRATO", 0) or 0)
+                        except (ValueError, TypeError):
+                            val_atual = 0.0
+                        novo_val = st.number_input(
+                            "💰 Valor Contrato (R$)", min_value=0.0, value=val_atual,
+                            format="%.2f", step=100.0, key=f"val_{setor}"
+                        )
+                        try:
+                            he_atual = float(forn.get("HORA EXTRA", 0) or 0)
+                        except (ValueError, TypeError):
+                            he_atual = 0.0
+                        nova_he = st.number_input(
+                            "⏱️ Hora Extra (R$)", min_value=0.0, value=he_atual,
+                            format="%.2f", step=50.0, key=f"he_{setor}"
+                        )
+                        nova_obs = st.text_area(
+                            "📝 Observação",
+                            value=forn.get("OBSERVAÇÃO", "") or "",
+                            height=80, key=f"obs_{setor}"
+                        )
+                    if st.form_submit_button("💾 Salvar", type="primary", use_container_width=True):
+                        item = fornecedores_dict.get(setor, {})
+                        item["EMPRESA"]        = nova_empresa.strip()
+                        item["RESPONSÁVEL"]    = novo_resp.strip()
+                        item["CEL/TEL"]        = novo_tel.strip()
+                        item["INSTAGRAM"]      = novo_insta.strip()
+                        item["STATUS"]         = novo_status
+                        item["VALOR CONTRATO"] = float(novo_val)
+                        item["HORA EXTRA"]     = float(nova_he)
+                        item["OBSERVAÇÃO"]     = nova_obs.strip()
                         salvar_dados(dados)
-                        st.toast(f"Setor '{setor_para_excluir}' excluído!", icon="🗑️")
+                        st.toast(f"Fornecedor '{setor}' salvo!", icon="💾")
                         st.rerun()
-    else:
-        st.info("🔒 Visualização de acompanhamento. Edições são realizadas pelo cerimonial.")
-        gb_ro = GridOptionsBuilder.from_dataframe(df_view)
-        gb_ro.configure_default_column(editable=False, resizable=True, sortable=True, filter=True)
-        gb_ro.configure_column("SETOR", headerName="Setor")
-        gb_ro.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency)
-        gb_ro.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency)
-        gb_ro.configure_grid_options(getRowStyle=get_row_style)
-        
-        AgGrid(
-            df_view,
-            gridOptions=gb_ro.build(),
-            theme="alpine",
-            height=450,
-            allow_unsafe_jscode=True,
-            key=f"ag_forn_ro_{st.session_state.evento_id}"
+            else:
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(f"**🏢 Empresa:** {empresa or '—'}")
+                    st.markdown(f"**👤 Responsável:** {resp or '—'}")
+                    st.markdown(f"**📞 Cel/Tel:** {tel or '—'}")
+                    st.markdown(f"**📸 Instagram:** {insta or '—'}")
+                with c2:
+                    st.markdown(f"**💰 Valor Contrato:** {val_fmt}")
+                    st.markdown(f"**⏱️ Hora Extra:** {he_fmt}")
+                    obs = forn.get("OBSERVAÇÃO", "") or ""
+                    if obs:
+                        st.markdown(f"**📝 Observação:** {obs}")
+
+    # Export button
+    st.write("")
+    cb1, _ = st.columns([2.5, 9.5])
+    with cb1:
+        excel_bytes = exportar_excel(evento_atual)
+        st.download_button(
+            "📥 Exportar Excel",
+            data=excel_bytes,
+            file_name=f"AT_{evento_atual['noivos'].replace(' ', '_').replace('&','e')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="dl_forn",
         )
+
+    if is_admin:
+        # Add/Remove Sectors Expanders
+        with st.expander("➕ / 🗑️ Adicionar ou Excluir Linhas (Setores)"):
+            st.markdown("<small>Adicione novos setores ou exclua setores existentes da sua lista de fornecedores.</small>", unsafe_allow_html=True)
+            
+            c_add, c_del = st.columns(2)
+            with c_add:
+                st.markdown("**Adicionar Setor**")
+                nome_novo_setor = st.text_input("Nome do Setor", placeholder="Ex: Banda Extra, Barman...", key="add_setor_name")
+                if st.button("➕ Adicionar Setor", key="btn_add_setor"):
+                    if nome_novo_setor.strip():
+                        setores_existentes = [f["SETOR"].strip().lower() for f in evento_atual["fornecedores"]]
+                        if nome_novo_setor.strip().lower() in setores_existentes:
+                            st.error("Este setor já existe.")
+                        else:
+                            novo_forn = {
+                                "SETOR": nome_novo_setor.strip(),
+                                "EMPRESA": "",
+                                "RESPONSÁVEL": "",
+                                "CEL/TEL": "",
+                                "VALOR CONTRATO": 0.0,
+                                "HORA EXTRA": 0.0,
+                                "INSTAGRAM": "",
+                                "OBSERVAÇÃO": "",
+                                "STATUS": "Orçando"
+                            }
+                            evento_atual["fornecedores"].append(novo_forn)
+                            salvar_dados(dados)
+                            st.toast(f"Setor '{nome_novo_setor}' adicionado com sucesso!", icon="🎉")
+                            st.rerun()
+                    else:
+                        st.warning("Digite o nome do setor.")
+            
+            with c_del:
+                st.markdown("**Excluir Setor**")
+                setores_lista = [f["SETOR"] for f in evento_atual["fornecedores"]]
+                setor_para_excluir = st.selectbox("Selecione o Setor para Excluir", setores_lista, key="del_setor_name")
+                if st.button("🗑️ Excluir Setor Selecionado", key="btn_del_setor"):
+                    evento_atual["fornecedores"] = [f for f in evento_atual["fornecedores"] if f["SETOR"] != setor_para_excluir]
+                    salvar_dados(dados)
+                    st.toast(f"Setor '{setor_para_excluir}' excluído!", icon="🗑️")
+                    st.rerun()
 
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 2 — CHECKLIST MÊS A MÊS
