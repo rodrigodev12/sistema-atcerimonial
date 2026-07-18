@@ -1129,22 +1129,40 @@ with t_forn:
     """)
 
     # ── Configuração do AgGrid ────────────────────────────────────────────────
+    # Estilo de célula com borda vertical (linha separadora entre colunas)
+    col_border_style = JsCode("""
+    function(params) {
+        return {
+            'border-right': '1px solid #CBD5E1',
+            'border-left': '1px solid #CBD5E1'
+        };
+    }
+    """)
+
     gb = GridOptionsBuilder.from_dataframe(df_view)
-    gb.configure_default_column(editable=True, resizable=True, sortable=True, filter=True)
-    
+    gb.configure_default_column(
+        editable=True, resizable=True, sortable=True, filter=True,
+        cellStyle=col_border_style
+    )
+
     # Configurações de colunas
-    gb.configure_column("SETOR", headerName="Setor", editable=False)
-    gb.configure_column("EMPRESA", headerName="Empresa")
-    gb.configure_column("RESPONSÁVEL", headerName="Responsável")
-    gb.configure_column("CEL/TEL", headerName="Cel/Tel")
-    gb.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency)
-    gb.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency)
-    gb.configure_column("INSTAGRAM", headerName="Instagram")
-    gb.configure_column("OBSERVAÇÃO", headerName="Observação")
-    gb.configure_column("STATUS", headerName="Status", cellEditor="agSelectCellEditor", cellEditorParams={"values": STATUS_OPCOES})
-    
-    gb.configure_grid_options(getRowStyle=get_row_style)
-    
+    gb.configure_column("SETOR", headerName="Setor", editable=False, cellStyle=col_border_style)
+    gb.configure_column("EMPRESA", headerName="Empresa", cellStyle=col_border_style)
+    gb.configure_column("RESPONSÁVEL", headerName="Responsável", cellStyle=col_border_style)
+    gb.configure_column("CEL/TEL", headerName="Cel/Tel", cellStyle=col_border_style)
+    gb.configure_column("VALOR CONTRATO", headerName="Valor Contrato", type=["numericColumn"], valueFormatter=format_currency, cellStyle=col_border_style)
+    gb.configure_column("HORA EXTRA", headerName="Hora Extra", type=["numericColumn"], valueFormatter=format_currency, cellStyle=col_border_style)
+    gb.configure_column("INSTAGRAM", headerName="Instagram", cellStyle=col_border_style)
+    gb.configure_column("OBSERVAÇÃO", headerName="Observação", cellStyle=col_border_style)
+    gb.configure_column("STATUS", headerName="Status", cellEditor="agSelectCellEditor", cellEditorParams={"values": STATUS_OPCOES}, cellStyle=col_border_style)
+
+    gb.configure_grid_options(
+        getRowStyle=get_row_style,
+        suppressColumnVirtualisation=True,
+        rowHeight=36,
+        headerHeight=40,
+    )
+
     gridOptions = gb.build()
     
     grid_response = AgGrid(
@@ -1159,6 +1177,20 @@ with t_forn:
     )
     
     df_edit = grid_response["data"]
+
+    # ── Legenda de cores ───────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 4px 0; align-items:center;">
+        <span style="font-size:12px; font-weight:600; color:#64748B; margin-right:4px;">Legenda:</span>
+        <span style="background:#FEE2E2; color:#991B1B; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #FECACA;">🔴 Orçando</span>
+        <span style="background:#DBEAFE; color:#1E40AF; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #BFDBFE;">🔵 Dados enviados</span>
+        <span style="background:#FEF3C7; color:#92400E; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #FDE68A;">🟡 Contrato recebido</span>
+        <span style="background:#F3E8FF; color:#6B21A8; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #E9D5FF;">🟣 Liberado p/ assinatura</span>
+        <span style="background:#ECFEFF; color:#155E75; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #A5F3FC;">🩵 Ag. assinatura contratado</span>
+        <span style="background:#D1FAE5; color:#065F46; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #6EE7B7;">🟢 CONTRATADO</span>
+        <span style="background:#F1F5F9; color:#475569; border-radius:6px; padding:2px 10px; font-size:11px; font-weight:500; border:1px solid #CBD5E1;">⚪ Não haverá</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Botão explícito de salvar ──────────────────────────────────────────────
     col_salvar, _ = st.columns([2, 10])
