@@ -1257,13 +1257,80 @@ with t_forn:
                         st.toast(f"Setor '{setor_para_excluir}' excluído!", icon="🗑️")
                         st.rerun()
     else:
-        st.info("🔒 Visualização de acompanhamento. Edições são realizadas pelo cerimonial.")
-        st.dataframe(
-            df_view.style.apply(colorir_linhas, axis=1),
-            column_config=col_cfg,
-            hide_index=True,
-            use_container_width=True,
-        )
+        # ── Vista de Cards para Noivos (UX mobile-first) ──────────────────────
+        STATUS_ICONE = {
+            "Orçando":                                             ("🔴", "#FEE2E2", "#991B1B"),
+            "Dados enviados":                                      ("🔵", "#DBEAFE", "#1E40AF"),
+            "Contrato recebido":                                   ("🟡", "#FEF3C7", "#92400E"),
+            "Análise concluída / liberado para assinatura":        ("🟣", "#F3E8FF", "#6B21A8"),
+            "Aguardando assinatura do CONTRATADO":                 ("🩵", "#ECFEFF", "#155E75"),
+            "CONTRATADO":                                          ("✅", "#D1FAE5", "#065F46"),
+            "Não haverá":                                          ("⚫", "#F1F5F9", "#475569"),
+        }
+
+        # Mini legenda de status
+        st.markdown("<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;'>"
+            + "".join([
+                f"<span style='background:{cor[1]};color:{cor[2]};border-radius:20px;"
+                f"padding:3px 10px;font-size:12px;font-weight:600;'>{icone} {s}</span>"
+                for s, (icone, *cor) in STATUS_ICONE.items()
+            ])
+            + "</div>", unsafe_allow_html=True)
+
+        if df_view.empty:
+            st.info("Nenhum fornecedor encontrado com os filtros aplicados.")
+        else:
+            for _, row in df_view.iterrows():
+                status = row.get("STATUS", "Orçando")
+                icone, bg, fg = STATUS_ICONE.get(status, ("⚪", "#F8FAFC", "#334155"))
+                empresa = row.get("EMPRESA", "") or "Não definida"
+                resp = row.get("RESPONSÁVEL", "") or ""
+                tel = row.get("CEL/TEL", "") or ""
+                insta = row.get("INSTAGRAM", "") or ""
+                obs = row.get("OBSERVAÇÃO", "") or ""
+                valor = row.get("VALOR CONTRATO", 0) or 0
+                hora_extra = row.get("HORA EXTRA", 0) or 0
+
+                card_html = f"""
+                <div style='
+                    background:{bg};
+                    border-left:4px solid {fg};
+                    border-radius:10px;
+                    padding:14px 18px;
+                    margin-bottom:10px;
+                    box-shadow:0 1px 4px rgba(0,0,0,0.06);
+                '>
+                  <div style='display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;'>
+                    <div>
+                      <div style='font-size:15px;font-weight:700;color:{fg};margin-bottom:4px;'>
+                        📍 {row['SETOR']}
+                      </div>
+                      <div style='font-size:14px;color:#1E293B;margin-bottom:2px;'>
+                        🏢 <b>{empresa}</b>
+                      </div>
+                      {'<div style="font-size:13px;color:#475569;">👤 ' + resp + '</div>' if resp else ''}
+                      {'<div style="font-size:13px;color:#475569;">📞 ' + tel + '</div>' if tel else ''}
+                      {'<div style="font-size:13px;color:#7C3AED;">📸 ' + insta + '</div>' if insta else ''}
+                      {'<div style="font-size:13px;color:#64748B;margin-top:4px;"><i>' + obs + '</i></div>' if obs else ''}
+                    </div>
+                    <div style='text-align:right;'>
+                      <div style='
+                          background:{fg};
+                          color:white;
+                          border-radius:20px;
+                          padding:4px 12px;
+                          font-size:12px;
+                          font-weight:700;
+                          white-space:nowrap;
+                          margin-bottom:8px;
+                      '>{icone} {status}</div>
+                      {('<div style="font-size:16px;font-weight:700;color:' + fg + ';">' + f'R$ {valor:,.2f}'.replace(',','X').replace('.',',').replace('X','.') + '</div><div style="font-size:11px;color:#94A3B8;">valor contrato</div>') if valor > 0 else ''}
+                      {('<div style="font-size:13px;color:#D97706;margin-top:4px;">⏰ Hora extra: R$ ' + f'{hora_extra:,.2f}'.replace(',','X').replace('.',',').replace('X','.') + '</div>') if hora_extra > 0 else ''}
+                    </div>
+                  </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # TAB 2 — CHECKLIST MÊS A MÊS
