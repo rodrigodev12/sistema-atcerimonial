@@ -129,6 +129,23 @@ st.markdown("""
 
 .stApp { background: #F1F5F9; font-family: 'Inter', sans-serif; }
 
+/* Ajusta o espaçamento superior gigante no topo do painel no celular e desktop */
+div[data-testid="stAppViewBlockContainer"] {
+    padding-top: 4rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+@media (max-width: 768px) {
+    div[data-testid="stAppViewBlockContainer"] {
+        padding-top: 3.5rem !important; /* Espaço ideal para o botão floating de abrir menu no celular */
+        padding-bottom: 1.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+}
+
 /* ── Sidebar ── */
 section[data-testid="stSidebar"],
 section[data-testid="stSidebar"] > div,
