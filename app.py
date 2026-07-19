@@ -561,10 +561,7 @@ with st.sidebar:
         </script>
         """, height=55)
 
-    else:
-        ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
-        st.markdown(f"**{ev_cli['noivos']}**")
-        st.markdown(f"📅 {ev_cli['data']}")
+        # --- Seções Extras do Administrador ---
         st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
         with st.expander("➕ Criar Novo Evento"):
             with st.form("form_criar_ev", clear_on_submit=True):
@@ -630,6 +627,11 @@ with st.sidebar:
                         st.rerun()
                     else:
                         st.warning("Marque a confirmação.")
+
+    else:
+        ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
+        st.markdown(f"**{ev_cli['noivos']}**")
+        st.markdown(f"📅 {ev_cli['data']}")
 
     # --- Botão de Logout comum para ambos ---
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
