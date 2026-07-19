@@ -137,16 +137,23 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
-}/* Mira no texto do cabeçalho da seção do st.navigation */
-[data-testid="stSidebarNav"] div span {
-    font-size: 20px !important;       /* Aumenta o tamanho do título */
-    font-weight: bold !important;     /* Deixa o texto em negrito marcante */
-    color: #ffffff !important;        /* Garante a cor branca para leitura */
+}/* 1. Mira APENAS no texto do cabeçalho da seção (título principal) */
+[data-testid="stSidebarNav"] > ul > li div[data-anchored="true"] p,
+[data-testid="stSidebarNav"] > div:first-child p {
+    font-size: 22px !important;       /* Aumenta somente o título */
+    font-weight: bold !important;     /* Deixa bem marcante */
+    color: #ffffff !important;
 }
 
-/* Cria um espaçamento (margem) abaixo do bloco do título antes de começarem as abas */
+/* 2. Cria o espaçamento elegante logo abaixo do título */
 [data-testid="stSidebarNavItems"] {
-    margin-top: 25px !important;      /* Ajuste esse número se quiser mais ou menos espaço */
+    margin-top: 25px !important;      /* Empurra as abas para baixo */
+}
+
+/* 3. Garante que os itens do menu (abas) voltem ao tamanho padrão caso tenham mudado */
+[data-testid="stSidebarNavItems"] span {
+    font-size: 14px !important;       /* Mantém as abas no tamanho normal */
+    font-weight: normal !important;
 }
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
