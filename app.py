@@ -474,93 +474,101 @@ with st.sidebar:
             key="sb_ev",
         )
         st.session_state.sel_ev = st.session_state.evento_id
+    else:
+        ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
+        st.markdown(f"**{ev_cli['noivos']}**")
+        st.markdown(f"📅 {ev_cli['data']}")
 
-        full_link = shared.obter_link_acesso(st.session_state.evento_id)
+    # --- Renderização do Link de Cópia para Ambos (Admin e Cliente) ---
+    st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
+    full_link = shared.obter_link_acesso(st.session_state.evento_id)
+    label_link = "Link de Acesso do Casal:" if is_admin else "Compartilhar Link do Painel:"
+    st.markdown(f"**🔗 {label_link}**")
 
-        st.markdown("**🔗 Link de Acesso do Casal:**")
-        components.html(f"""
-        <style>
-          * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }}
-          body {{ background: transparent; }}
-          .link-container {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #1E293B;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 10px 12px;
-          }}
-          .link-text {{
-            flex: 1;
-            color: #94A3B8;
-            font-family: monospace;
-            font-size: 12px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            user-select: all;
-          }}
-          .copy-btn {{
-            flex-shrink: 0;
-            background: #3B82F6;
-            color: #FFFFFF;
-            border: none;
-            border-radius: 6px;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-          }}
-          .copy-btn:hover {{ background: #2563EB; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }}
-          .copy-btn:active {{ transform: translateY(0); }}
-          .copy-btn.success {{ background: #10B981; box-shadow: 0 4px 12px rgba(16,185,129,0.4); }}
-          .copy-btn .icon {{ font-size: 14px; transition: all 0.3s; }}
-        </style>
-        <div class="link-container">
-          <span class="link-text" title="{full_link}">{full_link}</span>
-          <button class="copy-btn" id="copyBtn" onclick="copyLink()">
-            <span class="icon">📋</span>
-            <span id="btnText">Copiar</span>
-          </button>
-        </div>
-        <script>
-          function copyLink() {{
-            var link = "{full_link}";
-            if (navigator.clipboard && window.isSecureContext) {{
-              navigator.clipboard.writeText(link).then(showSuccess);
-            }} else {{
-              var el = document.createElement('textarea');
-              el.value = link;
-              document.body.appendChild(el);
-              el.select();
-              document.execCommand('copy');
-              document.body.removeChild(el);
-              showSuccess();
-            }}
-          }}
-          function showSuccess() {{
-            var btn = document.getElementById('copyBtn');
-            var txt = document.getElementById('btnText');
-            btn.classList.add('success');
-            btn.querySelector('.icon').textContent = '✅';
-            txt.textContent = 'Copiado!';
-            setTimeout(function() {{
-              btn.classList.remove('success');
-              btn.querySelector('.icon').textContent = '📋';
-              txt.textContent = 'Copiar';
-            }}, 2000);
-          }}
-        </script>
-        """, height=55)
+    components.html(f"""
+    <style>
+      * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }}
+      body {{ background: transparent; }}
+      .link-container {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }}
+      .link-text {{
+        flex: 1;
+        color: #94A3B8;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        user-select: all;
+      }}
+      .copy-btn {{
+        flex-shrink: 0;
+        background: #3B82F6;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }}
+      .copy-btn:hover {{ background: #2563EB; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }}
+      .copy-btn:active {{ transform: translateY(0); }}
+      .copy-btn.success {{ background: #10B981; box-shadow: 0 4px 12px rgba(16,185,129,0.4); }}
+      .copy-btn .icon {{ font-size: 14px; transition: all 0.3s; }}
+    </style>
+    <div class="link-container">
+      <span class="link-text" title="{full_link}">{full_link}</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+        <span class="icon">📋</span>
+        <span id="btnText">Copiar</span>
+      </button>
+    </div>
+    <script>
+      function copyLink() {{
+        var link = "{full_link}";
+        if (navigator.clipboard && window.isSecureContext) {{
+          navigator.clipboard.writeText(link).then(showSuccess);
+        }} else {{
+          var el = document.createElement('textarea');
+          el.value = link;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          showSuccess();
+        }}
+      }}
+      function showSuccess() {{
+        var btn = document.getElementById('copyBtn');
+        var txt = document.getElementById('btnText');
+        btn.classList.add('success');
+        btn.querySelector('.icon').textContent = '✅';
+        txt.textContent = 'Copiado!';
+        setTimeout(function() {{
+          btn.classList.remove('success');
+          btn.querySelector('.icon').textContent = '📋';
+          txt.textContent = 'Copiar';
+        }}, 2000);
+      }}
+    </script>
+    """, height=55)
 
+    # --- Seções Extras do Administrador ---
+    if is_admin:
         st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
-
         with st.expander("➕ Criar Novo Evento"):
             with st.form("form_criar_ev", clear_on_submit=True):
                 ne_noivos = st.text_input("Noivos", placeholder="Ex: Carla & Lucas")
@@ -579,7 +587,6 @@ with st.sidebar:
 
                     ev_id = shared.gerar_ev_id()
                     novo_ev = shared._novo_evento(ne_noivos, ne_data)
-                    # Gera o token amigável baseado nos nomes
                     novo_ev["link_token"] = shared.gerar_slug_token(ne_noivos, st.session_state.dados["eventos"])
                     
                     st.session_state.dados["eventos"][ev_id] = novo_ev
@@ -627,11 +634,7 @@ with st.sidebar:
                     else:
                         st.warning("Marque a confirmação.")
 
-    else:
-        ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
-        st.markdown(f"**{ev_cli['noivos']}**")
-        st.markdown(f"📅 {ev_cli['data']}")
-
+    # --- Botão de Logout comum para ambos ---
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
     if st.button("🚪 Sair do Sistema", key="btn_logout"):
         st.query_params.clear()
