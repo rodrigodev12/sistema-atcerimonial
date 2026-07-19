@@ -139,69 +139,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
-/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
-[data-testid="stSidebarContent"] {
-    display: flex !important;
-    flex-direction: column !important;
-}
 
-[data-testid="stSidebarUserContent"] {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
-    order: 1 !important;
-}
-[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
-    order: 2 !important;
-}
-[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
-    order: 3 !important;
-}
-
-[data-testid="stSidebarNav"] {
-    order: 4 !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
-    order: 5 !important;
-}
-
-/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
-[data-testid="stSidebarContent"] {
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-[data-testid="stSidebarUserContent"] {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
-    order: 1 !important;
-}
-[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
-    order: 2 !important;
-}
-[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
-    order: 3 !important;
-}
-
-[data-testid="stSidebarNav"] {
-    order: 4 !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
-    order: 5 !important;
-}
 
 
 
@@ -345,6 +283,22 @@ with st.sidebar:
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
+    # 1. Menu de Navegação Vertical nativo via st.sidebar.radio
+    abas = ["📊 Dashboard", "📄 Briefing"]
+    if is_admin:
+        abas.append("📋 Checklist Cerimonial")
+    abas.extend(["❤️ Checklist Noivos", "🏪 Fornecedores", "⏱️ Roteiro"])
+
+    aba_selecionada = st.radio(
+        "Navegação",
+        options=abas,
+        label_visibility="collapsed",
+        key="sb_navigation_radio"
+    )
+
+    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
+
+    # 2. Seletores e formulários de administrador/cliente abaixo do menu
     if is_admin:
         lista_ev = list(st.session_state.dados["eventos"].keys())
         if st.session_state.sel_ev not in lista_ev:
@@ -520,21 +474,23 @@ with st.sidebar:
         st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# NAVEGAÇÃO MULTIPÁGINAS NATIVA
+# ROTEAMENTO DAS PÁGINAS (EXECUTE CLÁSSICO)
 # ═══════════════════════════════════════════════════════════════════════════════
-pag_dashboard = st.Page("paginas/dashboard.py", title="Dashboard", icon=":material/bar_chart:")
-pag_briefing = st.Page("paginas/briefing.py", title="Briefing", icon=":material/description:")
-pag_cerimonial = st.Page("paginas/checklist_cerimonial.py", title="Checklist Cerimonial", icon=":material/rule:")
-pag_noivos = st.Page("paginas/checklist_noivos.py", title="Checklist Noivos", icon=":material/favorite:")
-pag_fornecedores = st.Page("paginas/fornecedores.py", title="Fornecedores", icon=":material/store:")
-pag_roteiro = st.Page("paginas/roteiro.py", title="Roteiro", icon=":material/schedule:")
-
-lista_paginas = [pag_dashboard, pag_briefing]
-
-if is_admin:
-    lista_paginas.append(pag_cerimonial)
-
-lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
-
-pg = st.navigation(lista_paginas)
-pg.run()
+if "Dashboard" in aba_selecionada:
+    with open("paginas/dashboard.py", encoding="utf-8") as f:
+        exec(f.read())
+elif "Briefing" in aba_selecionada:
+    with open("paginas/briefing.py", encoding="utf-8") as f:
+        exec(f.read())
+elif "Checklist Cerimonial" in aba_selecionada:
+    with open("paginas/checklist_cerimonial.py", encoding="utf-8") as f:
+        exec(f.read())
+elif "Checklist Noivos" in aba_selecionada:
+    with open("paginas/checklist_noivos.py", encoding="utf-8") as f:
+        exec(f.read())
+elif "Fornecedores" in aba_selecionada:
+    with open("paginas/fornecedores.py", encoding="utf-8") as f:
+        exec(f.read())
+elif "Roteiro" in aba_selecionada:
+    with open("paginas/roteiro.py", encoding="utf-8") as f:
+        exec(f.read())
