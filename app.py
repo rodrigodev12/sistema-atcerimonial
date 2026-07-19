@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import pandas as pd
 import os
 import shared
+import streamlit_antd_components as sac
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -155,6 +156,20 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 [data-testid="stSidebarNavItems"] span {
     font-size: 14px !important;       /* Protege o tamanho das abas */
     font-weight: normal !important;   /* Tira o negrito delas */
+}
+
+/* Ocultar o menu bottom_nav no desktop */
+@media (min-width: 768px) {
+    div.element-container:has(iframe[title*="bottom_nav"]) {
+        display: none !important;
+    }
+}
+
+/* Ocultar menu sidebar padrão no celular */
+@media (max-width: 767px) {
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
 }
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
@@ -494,4 +509,66 @@ menu_com_secao = {
 }
 
 pg = st.navigation(menu_com_secao)
+
+# --- MENU DE NAVEGAÇÃO MOBILE (BOTTOM NAV) ---
+# Mapeia as opções disponíveis
+titulos_mapeados = ["Dashboard", "Briefing"]
+if is_admin:
+    titulos_mapeados.append("Checklist Cerimonial")
+titulos_mapeados.extend(["Checklist Noivos", "Fornecedores", "Roteiro"])
+
+itens_bottom = [
+    sac.BottomNavItem('Dashboard', icon='bar-chart-steps'),
+    sac.BottomNavItem('Briefing', icon='file-text'),
+]
+if is_admin:
+    itens_bottom.append(sac.BottomNavItem('Cerimonial', icon='check-square'))
+itens_bottom.extend([
+    sac.BottomNavItem('Noivos', icon='heart'),
+    sac.BottomNavItem('Fornecedores', icon='shop'),
+    sac.BottomNavItem('Roteiro', icon='clock'),
+])
+
+# Encontra o índice da página atual do Streamlit
+default_index = 0
+try:
+    if pg.title in titulos_mapeados:
+        default_index = titulos_mapeados.index(pg.title)
+except Exception:
+    pass
+
+# Renderiza o menu do rodapé
+aba_selecionada = sac.bottom_nav(
+    items=itens_bottom,
+    align='center',
+    variant='filled',
+    color='dark',
+    index=default_index,
+    key='menu_celular'
+)
+
+# Mapeia o rótulo de volta para o arquivo
+mapeamento_caminhos = {
+    "Dashboard": "paginas/dashboard.py",
+    "Briefing": "paginas/briefing.py",
+    "Cerimonial": "paginas/checklist_cerimonial.py",
+    "Noivos": "paginas/checklist_noivos.py",
+    "Fornecedores": "paginas/fornecedores.py",
+    "Roteiro": "paginas/roteiro.py"
+}
+
+# Traduz o título da página ativa para o formato do rótulo correspondente
+rotulo_atual = "Dashboard"
+if pg.title == "Checklist Cerimonial":
+    rotulo_atual = "Cerimonial"
+elif pg.title == "Checklist Noivos":
+    rotulo_atual = "Noivos"
+else:
+    rotulo_atual = pg.title
+
+if aba_selecionada != rotulo_atual:
+    caminho_desejado = mapeamento_caminhos.get(aba_selecionada)
+    if caminho_desejado:
+        st.switch_page(caminho_desejado)
+
 pg.run()
