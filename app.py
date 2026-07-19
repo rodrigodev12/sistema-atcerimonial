@@ -6,10 +6,20 @@ import shared
 import streamlit_antd_components as sac
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PAGE CONFIG
+# PAGE CONFIG (DINÂMICO PARA PREVIEW DE NOIVOS)
 # ═══════════════════════════════════════════════════════════════════════════════
+noivos_nome = ""
+try:
+    ev_param = st.query_params.get("evento") or st.query_params.get("ev")
+    if ev_param:
+        noivos_nome = shared.obter_nome_noivos_por_token(ev_param)
+except Exception:
+    pass
+
+titulo_final = f"💍 Casamento {noivos_nome} — AT Cerimonial" if noivos_nome else "AT Cerimonial — Controle"
+
 st.set_page_config(
-    page_title="AT Cerimonial — Controle",
+    page_title=titulo_final,
     page_icon="💍",
     layout="wide",
     initial_sidebar_state="expanded",

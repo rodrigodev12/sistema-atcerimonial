@@ -374,3 +374,27 @@ def get_evento_atual():
     if "evento_id" in st.session_state and st.session_state.evento_id:
         return get_ev(st.session_state.dados, st.session_state.evento_id)
     return None
+
+def obter_nome_noivos_por_token(token: str) -> str:
+    # 1. Tenta carregar do Supabase sem chamar st.error
+    if supabase_client:
+        try:
+            response = supabase_client.table("at_cerimonial").select("data").eq("id", "dados_sistema").execute()
+            if response.data:
+                dados = response.data[0]["data"]
+                for ev in dados.get("eventos", {}).values():
+                    if ev.get("link_token") == token or ev.get("ev_id") == token:
+                        return ev.get("noivos", "")
+        except Exception:
+            pass
+    # 2. Tenta carregar do arquivo local
+    try:
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                for ev in dados.get("eventos", {}).values():
+                    if ev.get("link_token") == token or ev.get("ev_id") == token:
+                        return ev.get("noivos", "")
+    except Exception:
+        pass
+    return ""
