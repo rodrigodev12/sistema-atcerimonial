@@ -157,7 +157,26 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     font-size: 14px !important;       /* Protege o tamanho das abas */
     font-weight: normal !important;   /* Tira o negrito delas */
 }
+/* Destacar e tornar mais visível o botão que chama o menu lateral (stSidebarCollapseButton / collapsedControl) */
+[data-testid="collapsedControl"] {
+    background-color: #134074 !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+    margin: 8px 12px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+    transition: background-color 0.2s, transform 0.2s !important;
+}
 
+[data-testid="collapsedControl"]:hover {
+    background-color: #0B2545 !important;
+    transform: scale(1.05) !important;
+}
+
+[data-testid="collapsedControl"] svg {
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+    transform: scale(1.2) !important;
+}
 
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
