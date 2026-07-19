@@ -171,6 +171,38 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     order: 5 !important;
 }
 
+/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
+[data-testid="stSidebarContent"] {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+[data-testid="stSidebarUserContent"] {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
+    order: 1 !important;
+}
+[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
+    order: 2 !important;
+}
+[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
+    order: 3 !important;
+}
+
+[data-testid="stSidebarNav"] {
+    order: 4 !important;
+}
+
+[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
+    order: 5 !important;
+}
+
 
 
 div.stButton > button, div.stFormSubmitButton > button {
@@ -306,40 +338,13 @@ is_admin = st.session_state.tipo_usuario == "admin"
 evento_atual = shared.get_evento_atual()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIDEBAR CONTAINERS
+# SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
-topo_sidebar = st.sidebar.container()
-rodape_sidebar = st.sidebar.container()
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# NAVEGAÇÃO MULTIPÁGINAS NATIVA
-# ═══════════════════════════════════════════════════════════════════════════════
-pag_dashboard = st.Page("paginas/dashboard.py", title="Dashboard", icon=":material/bar_chart:")
-pag_briefing = st.Page("paginas/briefing.py", title="Briefing", icon=":material/description:")
-pag_cerimonial = st.Page("paginas/checklist_cerimonial.py", title="Checklist Cerimonial", icon=":material/rule:")
-pag_noivos = st.Page("paginas/checklist_noivos.py", title="Checklist Noivos", icon=":material/favorite:")
-pag_fornecedores = st.Page("paginas/fornecedores.py", title="Fornecedores", icon=":material/store:")
-pag_roteiro = st.Page("paginas/roteiro.py", title="Roteiro", icon=":material/schedule:")
-
-lista_paginas = [pag_dashboard, pag_briefing]
-
-if is_admin:
-    lista_paginas.append(pag_cerimonial)
-
-lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
-
-# Injeta o cabeçalho no TOPO
-with topo_sidebar:
+with st.sidebar:
     st.markdown("<h2 class='notranslate' style='margin:0 0 4px;'>AT Cerimonial</h2>", unsafe_allow_html=True)
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
-# Inicializa a navegação oficial (position="sidebar" é padrão)
-pg = st.navigation(lista_paginas)
-
-# Injeta os seletores no RODAPÉ
-with rodape_sidebar:
-    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
     if is_admin:
         lista_ev = list(st.session_state.dados["eventos"].keys())
         if st.session_state.sel_ev not in lista_ev:
@@ -514,5 +519,22 @@ with rodape_sidebar:
             st.session_state[k] = False if k == "logado" else None
         st.rerun()
 
-# Roda o conteúdo na tela central
+# ═══════════════════════════════════════════════════════════════════════════════
+# NAVEGAÇÃO MULTIPÁGINAS NATIVA
+# ═══════════════════════════════════════════════════════════════════════════════
+pag_dashboard = st.Page("paginas/dashboard.py", title="Dashboard", icon=":material/bar_chart:")
+pag_briefing = st.Page("paginas/briefing.py", title="Briefing", icon=":material/description:")
+pag_cerimonial = st.Page("paginas/checklist_cerimonial.py", title="Checklist Cerimonial", icon=":material/rule:")
+pag_noivos = st.Page("paginas/checklist_noivos.py", title="Checklist Noivos", icon=":material/favorite:")
+pag_fornecedores = st.Page("paginas/fornecedores.py", title="Fornecedores", icon=":material/store:")
+pag_roteiro = st.Page("paginas/roteiro.py", title="Roteiro", icon=":material/schedule:")
+
+lista_paginas = [pag_dashboard, pag_briefing]
+
+if is_admin:
+    lista_paginas.append(pag_cerimonial)
+
+lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
+
+pg = st.navigation(lista_paginas)
 pg.run()
