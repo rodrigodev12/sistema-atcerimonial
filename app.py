@@ -137,14 +137,17 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
+}/* Mira no texto do cabeçalho da seção do st.navigation */
+[data-testid="stSidebarNav"] div span {
+    font-size: 20px !important;       /* Aumenta o tamanho do título */
+    font-weight: bold !important;     /* Deixa o texto em negrito marcante */
+    color: #ffffff !important;        /* Garante a cor branca para leitura */
 }
 
-
-
-
-
-
-
+/* Cria um espaçamento (margem) abaixo do bloco do título antes de começarem as abas */
+[data-testid="stSidebarNavItems"] {
+    margin-top: 25px !important;      /* Ajuste esse número se quiser mais ou menos espaço */
+}
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
     color: #FFFFFF !important;
