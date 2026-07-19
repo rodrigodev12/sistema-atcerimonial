@@ -158,51 +158,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     font-weight: normal !important;   /* Tira o negrito delas */
 }
 
-/* Ocultar o menu tabs no desktop */
-@media (min-width: 768px) {
-    iframe[title*="tabs"],
-    iframe[title*="streamlit_antd_components"],
-    div.element-container:has(iframe[title*="tabs"]),
-    div.element-container:has(iframe[title*="streamlit_antd_components"]) {
-        display: none !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-}
 
-/* Ocultar menu sidebar padrão no celular e fixar as abas no rodapé */
-@media (max-width: 767px) {
-    [data-testid="stSidebar"] {
-        display: none !important;
-    }
-    [data-testid="stSidebarCollapseButton"] {
-        display: none !important;
-    }
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    
-    /* Fixa o componente sac.tabs no rodapé do celular (alvo: contêiner e iframe direto para CORS/Browser compat) */
-    div.element-container:has(iframe[title*="tabs"]),
-    div.element-container:has(iframe[title*="streamlit_antd_components"]),
-    iframe[title*="tabs"],
-    iframe[title*="streamlit_antd_components"] {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 999999 !important;
-        background-color: #0F172A !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-        height: 52px !important;
-    }
-    
-    /* Espaço para o conteúdo não ficar coberto */
-    .main .block-container {
-        padding-bottom: 85px !important;
-    }
-}
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
     color: #FFFFFF !important;
@@ -543,66 +499,3 @@ menu_com_secao = {
 pg = st.navigation(menu_com_secao)
 
 pg.run()
-
-# --- MENU DE NAVEGAÇÃO MOBILE (BOTTOM TABS) ---
-# Executado após pg.run() para que a renderização ocorra no final da página (rodapé)
-# Mapeia as opções disponíveis
-titulos_mapeados = ["Dashboard", "Briefing"]
-if is_admin:
-    titulos_mapeados.append("Checklist Cerimonial")
-titulos_mapeados.extend(["Checklist Noivos", "Fornecedores", "Roteiro"])
-
-itens_bottom = [
-    sac.TabsItem('Dashboard', icon='bar-chart-steps'),
-    sac.TabsItem('Briefing', icon='file-text'),
-]
-if is_admin:
-    itens_bottom.append(sac.TabsItem('Cerimonial', icon='check-square'))
-itens_bottom.extend([
-    sac.TabsItem('Noivos', icon='heart'),
-    sac.TabsItem('Fornecedores', icon='shop'),
-    sac.TabsItem('Roteiro', icon='clock'),
-])
-
-# Encontra o índice da página atual do Streamlit
-default_index = 0
-try:
-    if pg.title in titulos_mapeados:
-        default_index = titulos_mapeados.index(pg.title)
-except Exception:
-    pass
-
-# Renderiza o menu do rodapé usando sac.tabs com largura de contêiner preenchida
-aba_selecionada = sac.tabs(
-    items=itens_bottom,
-    align='center',
-    variant='default',
-    color='dark',
-    index=default_index,
-    use_container_width=True,
-    key='menu_celular'
-)
-
-# Mapeia o rótulo de volta para o arquivo
-mapeamento_caminhos = {
-    "Dashboard": "paginas/dashboard.py",
-    "Briefing": "paginas/briefing.py",
-    "Cerimonial": "paginas/checklist_cerimonial.py",
-    "Noivos": "paginas/checklist_noivos.py",
-    "Fornecedores": "paginas/fornecedores.py",
-    "Roteiro": "paginas/roteiro.py"
-}
-
-# Traduz o título da página ativa para o formato do rótulo correspondente
-rotulo_atual = "Dashboard"
-if pg.title == "Checklist Cerimonial":
-    rotulo_atual = "Cerimonial"
-elif pg.title == "Checklist Noivos":
-    rotulo_atual = "Noivos"
-else:
-    rotulo_atual = pg.title
-
-if aba_selecionada != rotulo_atual:
-    caminho_desejado = mapeamento_caminhos.get(aba_selecionada)
-    if caminho_desejado:
-        st.switch_page(caminho_desejado)
