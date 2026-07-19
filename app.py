@@ -496,5 +496,33 @@ if is_admin:
 
 lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
+# 🔥 INJEÇÃO JAVASCRIPT: Move os elementos fisicamente na tela de forma reativa
+components.html("""
+    <script>
+    function inverterLayout() {
+        try {
+            // Encontra a barra lateral do Streamlit
+            const sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
+            if (!sidebar) return;
+
+            // Encontra o menu de navegação e o bloco vertical de textos do usuário
+            const menuNav = sidebar.querySelector('nav[data-testid="stSidebarNav"]');
+            const userContent = sidebar.querySelector('div[data-testid="stSidebarUserContent"] div[data-testid="stVerticalBlock"]');
+
+            if (menuNav && userContent) {
+                // Insere o bloco de textos do usuário exatamente ANTES do menu de páginas
+                menuNav.parentNode.insertBefore(userContent, menuNav);
+                clearInterval(checkInterval); // Interrompe o loop ao funcionar
+            }
+        } catch (e) {
+            console.warn("Navegador bloqueou acesso cross-origin ao parent:", e);
+            clearInterval(checkInterval);
+        }
+    }
+    // Executa a checagem continuamente até que a página carregue por completo
+    const checkInterval = setInterval(inverterLayout, 200);
+    </script>
+""", height=0, width=0)
+
 pg = st.navigation(lista_paginas)
 pg.run()
