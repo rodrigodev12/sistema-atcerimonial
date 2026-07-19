@@ -33,6 +33,87 @@ try:
 except Exception:
     st.warning(f"📅 Data do evento cadastrada: **{evento_atual['data']}** (insira no formato DD/MM/AAAA para habilitar contagem)")
 
+# Se for noivos, exibe um card amigável no topo para copiar/compartilhar o portal (visível no celular sem abrir menu)
+if st.session_state.tipo_usuario == "cliente":
+    link_acesso = shared.obter_link_acesso(st.session_state.evento_id)
+    import streamlit.components.v1 as components
+    components.html(f"""
+    <style>
+      * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+      body {{ background: transparent; }}
+      .share-card {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #F0FDFA;
+        border: 1px solid #CCFBF1;
+        border-radius: 8px;
+        padding: 10px 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }}
+      .share-text {{
+        flex: 1;
+        font-size: 13px;
+        color: #0F766E;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }}
+      .share-btn {{
+        background: #0D9488;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }}
+      .share-btn:hover {{ background: #0F766E; }}
+      .share-btn.success {{ background: #10B981; }}
+    </style>
+    <div class="share-card">
+      <span class="share-text">{link_acesso}</span>
+      <button class="share-btn" id="shareBtn" onclick="copyLink()">
+        <span class="icon">📋</span>
+        <span id="btnText">Copiar Link</span>
+      </button>
+    </div>
+    <script>
+      function copyLink() {{
+        var link = "{link_acesso}";
+        if (navigator.clipboard && window.isSecureContext) {{
+          navigator.clipboard.writeText(link).then(showSuccess);
+        }} else {{
+          var el = document.createElement('textarea');
+          el.value = link;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+          showSuccess();
+        }}
+      }}
+      function showSuccess() {{
+        var btn = document.getElementById('shareBtn');
+        var txt = document.getElementById('btnText');
+        btn.classList.add('success');
+        btn.querySelector('.icon').textContent = '✅';
+        txt.textContent = 'Copiado!';
+        setTimeout(function() {{
+          btn.classList.remove('success');
+          btn.querySelector('.icon').textContent = '📋';
+          txt.textContent = 'Copiar Link';
+        }}, 2000);
+      }}
+    </script>
+    """, height=50)
+
 df_f  = pd.DataFrame(evento_atual["fornecedores"])
 total = len(df_f)
 
