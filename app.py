@@ -242,6 +242,25 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     border-radius: 8px;
     padding: 12px 16px;
 }
+
+/* Oculta cabeçalho (Fork, GitHub, menu de 3 pontos) e rodapé/status do Streamlit */
+header[data-testid="stHeader"] {
+    visibility: hidden !important;
+}
+button[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+}
+.stAppDeployButton,
+.stDeployButton,
+.viewerBadge,
+div[class^="viewerBadge"],
+div[data-testid="stAppViewerBadge"],
+[data-testid="stConnectionStatus"],
+div[data-testid="stDecoration"],
+footer {
+    display: none !important;
+    visibility: hidden !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
