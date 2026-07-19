@@ -22,7 +22,7 @@ if noivos_nome:
     else:
         titulo_final = f"💍 Casamento {noivos_nome} — AT Cerimonial"
 else:
-    titulo_final = "AT Cerimonial — Controle"
+    titulo_final = "💍 AT Cerimonial — Portal dos Noivos"
 
 st.set_page_config(
     page_title=titulo_final,
