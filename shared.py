@@ -372,6 +372,24 @@ def get_evento_atual():
     if "dados" not in st.session_state or st.session_state.dados is None:
         st.session_state.dados = carregar_dados()
     if "evento_id" in st.session_state and st.session_state.evento_id:
+        if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
+            try:
+                _ev_id = st.session_state.evento_id
+                _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
+                st.html(f"""
+                <script>
+                try {{
+                    localStorage.setItem('at_ev_token', '{_token}');
+                }} catch(e) {{}}
+                try {{
+                    const d = new Date();
+                    d.setTime(d.getTime() + (30*24*60*60*1000));
+                    document.cookie = "at_ev_token={_token};expires=" + d.toUTCString() + ";path=/;SameSite=Lax;Secure";
+                }} catch(e) {{}}
+                </script>
+                """, unsafe_allow_javascript=True)
+            except Exception:
+                pass
         return get_ev(st.session_state.dados, st.session_state.evento_id)
     return None
 

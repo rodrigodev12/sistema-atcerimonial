@@ -346,17 +346,47 @@ if not st.session_state.logado:
 
     st.html("""
     <script>
+    function obterToken() {
+        let token = null;
+        try {
+            token = localStorage.getItem('at_ev_token');
+        } catch(e) {}
+        if (!token) {
+            try {
+                const name = "at_ev_token=";
+                const ca = document.cookie.split(';');
+                for(let i = 0; i < ca.length; i++) {
+                    let c = ca[i].trim();
+                    if (c.indexOf(name) == 0) {
+                        token = c.substring(name.length, c.length);
+                        break;
+                    }
+                }
+            } catch(e) {}
+        }
+        return token;
+    }
+
+    function limparToken() {
+        try {
+            localStorage.removeItem('at_ev_token');
+        } catch(e) {}
+        try {
+            document.cookie = "at_ev_token=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax;Secure";
+        } catch(e) {}
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('logout') === '1') {
-        localStorage.removeItem('at_ev_token');
+        limparToken();
         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
     } else if (urlParams.has('ev') || urlParams.has('evento')) {
         // Se a URL contém o token de evento mas caiu aqui na tela de login, significa que o token é inválido
-        // Limpamos o localStorage para evitar loop de redirecionamento infinito.
-        localStorage.removeItem('at_ev_token');
+        // Limpamos o token salvo para evitar loop de redirecionamento infinito.
+        limparToken();
     } else {
-        const savedToken = localStorage.getItem('at_ev_token');
+        const savedToken = obterToken();
         if (savedToken) {
             window.location.href = window.location.pathname + "?ev=" + savedToken;
         }
@@ -406,14 +436,21 @@ if not st.session_state.logado:
 is_admin = st.session_state.tipo_usuario == "admin"
 evento_atual = shared.get_evento_atual()
 
-# Salva o token no localStorage para persistência de sessão nos noivos
+# Salva o token no localStorage e cookies para persistência de sessão nos noivos
 if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
     try:
         _ev_id = st.session_state.get("evento_id")
         _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
         st.html(f"""
         <script>
-        localStorage.setItem('at_ev_token', '{_token}');
+        try {{
+            localStorage.setItem('at_ev_token', '{_token}');
+        }} catch(e) {{}}
+        try {{
+            const d = new Date();
+            d.setTime(d.getTime() + (30*24*60*60*1000));
+            document.cookie = "at_ev_token={_token};expires=" + d.toUTCString() + ";path=/;SameSite=Lax;Secure";
+        }} catch(e) {{}}
         </script>
         """, unsafe_allow_javascript=True)
     except Exception:
