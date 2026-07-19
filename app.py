@@ -139,6 +139,38 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
+/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
+[data-testid="stSidebarContent"] {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+[data-testid="stSidebarUserContent"] {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
+    order: 1 !important;
+}
+[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
+    order: 2 !important;
+}
+[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
+    order: 3 !important;
+}
+
+[data-testid="stSidebarNav"] {
+    order: 4 !important;
+}
+
+[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
+    order: 5 !important;
+}
+
 
 
 div.stButton > button, div.stFormSubmitButton > button {
@@ -274,17 +306,13 @@ is_admin = st.session_state.tipo_usuario == "admin"
 evento_atual = shared.get_evento_atual()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# SIDEBAR HEADER & FOOTER CALLBACKS
+# SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
-def renderizar_cabecalho_topo():
+with st.sidebar:
     st.markdown("<h2 class='notranslate' style='margin:0 0 4px;'>AT Cerimonial</h2>", unsafe_allow_html=True)
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
-def renderizar_rodape_baixo():
-    is_admin = st.session_state.tipo_usuario == "admin"
-    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
-    
     if is_admin:
         lista_ev = list(st.session_state.dados["eventos"].keys())
         if st.session_state.sel_ev not in lista_ev:
@@ -476,9 +504,5 @@ if is_admin:
 
 lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
-pg = st.navigation(
-    lista_paginas,
-    header=renderizar_cabecalho_topo,
-    footer=renderizar_rodape_baixo
-)
+pg = st.navigation(lista_paginas)
 pg.run()
