@@ -263,18 +263,21 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     padding: 12px 16px;
 }
 
-/* Oculta os botões do canto superior direito do cabeçalho (Fork, GitHub, menu de 3 pontos) sem afetar a seta de abrir/fechar o menu */
+/* Oculta especificamente os botões do canto superior direito do cabeçalho (Fork, GitHub, menu de 3 pontos) */
 header[data-testid="stHeader"] a,
-header[data-testid="stHeader"] button:not([data-testid="stSidebarCollapseButton"]) {
+header[data-testid="stHeader"] [data-testid="stHeaderOverflowButton"],
+header[data-testid="stHeader"] [data-testid="stActionButton"] {
     display: none !important;
     visibility: hidden !important;
 }
 
+/* Oculta o selo "Hosted with Streamlit", o avatar de desenvolvedor, o botão Deploy e rodapé do Streamlit no canto inferior direito */
+a[class*="viewerBadge"],
+a[href*="streamlit.io/cloud"],
+a[href*="share.streamlit.io/user"],
+[data-testid="stAppDeployButton"],
 .stAppDeployButton,
 .stDeployButton,
-.viewerBadge,
-div[class^="viewerBadge"],
-div[data-testid="stAppViewerBadge"],
 [data-testid="stConnectionStatus"],
 div[data-testid="stDecoration"],
 footer {
