@@ -250,6 +250,25 @@ div.stButton > button *, div.stFormSubmitButton > button * {
 # ═══════════════════════════════════════════════════════════════════════════════
 if "dados" not in st.session_state:
     st.session_state.dados = shared.carregar_dados()
+    
+    # Migração automática de tokens antigos/longos para slugs curtos e amigáveis
+    _updated = False
+    for _ev_id, _ev in st.session_state.dados.get("eventos", {}).items():
+        _tok = _ev.get("link_token", "")
+        # Se o token for longo (hexadecimal antigo), começar com "ev_" ou estiver vazio
+        if len(_tok) > 20 or _tok.startswith("ev_") or not _tok:
+            _slug_base = shared.limpar_nome_slug(_ev.get("noivos", "evento"))
+            _slug = _slug_base
+            _existentes = {_e.get("link_token") for _k, _e in st.session_state.dados["eventos"].items() if _k != _ev_id}
+            import random, string
+            while _slug in _existentes:
+                _suffix = "".join(random.choices(string.digits, k=3))
+                _slug = f"{_slug_base}-{_suffix}"
+            _ev["link_token"] = _slug
+            _updated = True
+            
+    if _updated:
+        shared.salvar_dados(st.session_state.dados)
 
 _ss_defaults = {
     "logado": False, "usuario": None, "tipo_usuario": None, "evento_id": None,
@@ -489,7 +508,11 @@ with st.sidebar:
                         ne_data = f"{data_limpa[:2]}/{data_limpa[2:4]}/20{data_limpa[4:]}"
 
                     ev_id = shared.gerar_ev_id()
-                    st.session_state.dados["eventos"][ev_id] = shared._novo_evento(ne_noivos, ne_data)
+                    novo_ev = shared._novo_evento(ne_noivos, ne_data)
+                    # Gera o token amigável baseado nos nomes
+                    novo_ev["link_token"] = shared.gerar_slug_token(ne_noivos, st.session_state.dados["eventos"])
+                    
+                    st.session_state.dados["eventos"][ev_id] = novo_ev
                     shared.salvar_dados(st.session_state.dados)
                     st.session_state.sel_ev = ev_id
                     st.session_state.novo_ev_cred = {

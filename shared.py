@@ -398,3 +398,26 @@ def obter_nome_noivos_por_token(token: str) -> str:
     except Exception:
         pass
     return ""
+
+def limpar_nome_slug(nome: str) -> str:
+    import re
+    import unicodedata
+    nome = nome.lower().replace("casamento", "")
+    nome = "".join(c for c in unicodedata.normalize('NFD', nome) if unicodedata.category(c) != 'Mn')
+    nome = nome.replace("&", "-")
+    nome = re.sub(r'\b(e)\b', '-', nome)
+    slug = re.sub(r'[^a-z0-9]+', '-', nome).strip('-')
+    slug = re.sub(r'-+', '-', slug)
+    return slug
+
+def gerar_slug_token(noivos: str, eventos: dict) -> str:
+    base_slug = limpar_nome_slug(noivos)
+    if not base_slug:
+        base_slug = "evento"
+    
+    slug = base_slug
+    tokens_existentes = {ev.get("link_token") for ev in eventos.values() if ev.get("link_token")}
+    while slug in tokens_existentes:
+        suffix = "".join(random.choices(string.digits, k=3))
+        slug = f"{base_slug}-{suffix}"
+    return slug
