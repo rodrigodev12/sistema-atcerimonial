@@ -291,15 +291,46 @@ if not st.session_state.logado:
     <style>
     section[data-testid="stSidebar"] { display: none !important; }
     header[data-testid="stHeader"]   { display: none !important; }
+    
+    /* Plano de fundo com gradiente azul marinho para azul turquesa */
+    .stApp {
+        background: linear-gradient(135deg, #0B2545 0%, #134074 45%, #00B4D8 100%) !important;
+        background-attachment: fixed !important;
+    }
+    
+    /* Estilo do card de login com sombra elegante */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: rgba(255, 255, 255, 0.98) !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35) !important;
+    }
+    
+    /* Textos no fundo escuro */
+    .login-title {
+        color: #FFFFFF !important;
+        text-align: center;
+        font-size: 30px;
+        margin-bottom: 2px;
+        font-weight: 700;
+        text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .login-subtitle {
+        color: rgba(255, 255, 255, 0.85) !important;
+        text-align: center;
+        margin-bottom: 16px;
+        font-size: 14px;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
     </style>
     """, unsafe_allow_html=True)
 
-    _, col, _ = st.columns([1, 1, 1])
+    _, col, _ = st.columns([1, 1.1, 1])
     with col:
         st.write("")
         st.markdown(
-            "<h1 class='notranslate' style='text-align:center;font-size:28px;margin-bottom:2px;'>💍 AT Cerimonial</h1>"
-            "<p style='text-align:center;opacity:0.65;margin-bottom:12px;font-size:13px;'>Gestão Integrada de Eventos</p>",
+            "<h1 class='notranslate login-title'>💍 AT Cerimonial</h1>"
+            "<p class='login-subtitle'>Gestão Integrada de Eventos</p>",
             unsafe_allow_html=True,
         )
         with st.container(border=True):
