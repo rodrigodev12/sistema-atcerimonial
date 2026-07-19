@@ -309,6 +309,19 @@ if not st.session_state.logado:
                 else:
                     st.error("Usuário ou senha inválidos.")
 
+            # Modo de depuração para verificar conexão e dados
+            if st.query_params.get("debug") == "1":
+                st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
+                st.caption("🔍 **Diagnóstico do Sistema**")
+                st.write("• **Supabase conectado:**", shared.supabase_client is not None)
+                st.write("• **Eventos carregados:**")
+                eventos_dict = st.session_state.dados.get("eventos", {})
+                if eventos_dict:
+                    for ev_id, ev in eventos_dict.items():
+                        st.write(f"- ID: `{ev_id}` | Noivos: **{ev.get('noivos')}** | Token: `{ev.get('link_token')}`")
+                else:
+                    st.write("Nenhum evento cadastrado no banco de dados.")
+
         st.markdown(
             "<p style='text-align:center;font-size:11px;opacity:0.4;margin-top:14px;'>AT Cerimonial © 2026</p>",
             unsafe_allow_html=True,
