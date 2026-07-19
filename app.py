@@ -139,6 +139,34 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
+/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
+[data-testid="stSidebarContent"] {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+[data-testid="stSidebarUserContent"] {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div:nth-child(1) {
+    order: 1 !important;
+}
+[data-testid="stSidebarUserContent"] > div:nth-child(2) {
+    order: 2 !important;
+}
+[data-testid="stSidebarUserContent"] > div:nth-child(3) {
+    order: 3 !important;
+}
+
+[data-testid="stSidebarNav"] {
+    order: 4 !important;
+}
+
+[data-testid="stSidebarUserContent"] > div:nth-child(n+4) {
+    order: 5 !important;
+}
+
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
     color: #FFFFFF !important;
