@@ -313,7 +313,15 @@ if not st.session_state.logado:
             if st.query_params.get("debug") == "1":
                 st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
                 st.caption("🔍 **Diagnóstico do Sistema**")
+                
+                url_det = shared.SUPABASE_URL
+                key_det = shared.SUPABASE_KEY
+                st.write("• **URL detectada:**", f"`{url_det[:25]}...`" if url_det else "Não detectada")
+                st.write("• **KEY detectada:**", f"`{key_det[:15]}...`" if key_det else "Não detectada")
                 st.write("• **Supabase conectado:**", shared.supabase_client is not None)
+                if shared.supabase_error:
+                    st.write("• **Erro de conexão:**", f"`{shared.supabase_error}`")
+                
                 st.write("• **Eventos carregados:**")
                 eventos_dict = st.session_state.dados.get("eventos", {})
                 if eventos_dict:

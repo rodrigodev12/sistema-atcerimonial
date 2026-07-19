@@ -137,11 +137,13 @@ except Exception:
     SUPABASE_URL = os.environ.get("SUPABASE_URL")
     SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
+supabase_error = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception:
+    except Exception as e:
         supabase_client = None
+        supabase_error = str(e)
 else:
     supabase_client = None
 
