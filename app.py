@@ -157,37 +157,29 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     font-size: 14px !important;       /* Protege o tamanho das abas */
     font-weight: normal !important;   /* Tira o negrito delas */
 }
-/* Destacar e tornar mais visível o botão que chama o menu lateral (collapsedControl) no celular/desktop */
-[data-testid="collapsedControl"] button {
-    background-color: #134074 !important;
-    color: #FFFFFF !important;
-    border-radius: 8px !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    padding: 8px 12px !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2) !important;
+/* Força o botão do menu lateral no celular a ficar destacado e visível */
+button[data-testid="stSidebarCollapseButton"] {
+    background-color: #3b82f6 !important; /* Deixa o botão azul */
+    color: white !important;               /* Deixa a seta branca */
+    border-radius: 50% !important;         /* Transforma em um círculo */
+    width: 45px !important;
+    height: 45px !important;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important; /* Dá relevo */
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    z-index: 999999 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: background-color 0.2s, transform 0.1s !important;
 }
 
-[data-testid="collapsedControl"] button:hover {
-    background-color: #0B2545 !important;
-    transform: scale(1.05) !important;
-}
-
-[data-testid="collapsedControl"] button:active {
-    transform: scale(0.95) !important;
-}
-
-[data-testid="collapsedControl"] button svg {
-    color: #FFFFFF !important;
-    fill: #FFFFFF !important;
-    width: 24px !important;
-    height: 24px !important;
-    transform: scale(1.4) !important;
+button[data-testid="stSidebarCollapseButton"] svg {
+    color: white !important;
+    fill: white !important;
+    width: 22px !important;
+    height: 22px !important;
+    transform: scale(1.3) !important;
 }
 
 
