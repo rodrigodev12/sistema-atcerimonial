@@ -160,8 +160,14 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 
 /* Ocultar o menu tabs no desktop */
 @media (min-width: 768px) {
-    div.element-container:has(iframe[title*="tabs"]) {
+    iframe[title*="tabs"],
+    iframe[title*="streamlit_antd_components"],
+    div.element-container:has(iframe[title*="tabs"]),
+    div.element-container:has(iframe[title*="streamlit_antd_components"]) {
         display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 }
 
