@@ -183,8 +183,11 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
         display: none !important;
     }
     
-    /* Fixa o componente sac.tabs no rodapé do celular */
-    div.element-container:has(iframe[title*="tabs"]) {
+    /* Fixa o componente sac.tabs no rodapé do celular (alvo: contêiner e iframe direto para CORS/Browser compat) */
+    div.element-container:has(iframe[title*="tabs"]),
+    div.element-container:has(iframe[title*="streamlit_antd_components"]),
+    iframe[title*="tabs"],
+    iframe[title*="streamlit_antd_components"] {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
@@ -192,12 +195,12 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
         z-index: 999999 !important;
         background-color: #0F172A !important;
         border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-        padding: 4px 10px !important;
+        height: 52px !important;
     }
     
     /* Espaço para o conteúdo não ficar coberto */
     .main .block-container {
-        padding-bottom: 75px !important;
+        padding-bottom: 85px !important;
     }
 }
 div.stButton > button, div.stFormSubmitButton > button {
@@ -539,7 +542,10 @@ menu_com_secao = {
 
 pg = st.navigation(menu_com_secao)
 
+pg.run()
+
 # --- MENU DE NAVEGAÇÃO MOBILE (BOTTOM TABS) ---
+# Executado após pg.run() para que a renderização ocorra no final da página (rodapé)
 # Mapeia as opções disponíveis
 titulos_mapeados = ["Dashboard", "Briefing"]
 if is_admin:
@@ -600,5 +606,3 @@ if aba_selecionada != rotulo_atual:
     caminho_desejado = mapeamento_caminhos.get(aba_selecionada)
     if caminho_desejado:
         st.switch_page(caminho_desejado)
-
-pg.run()
