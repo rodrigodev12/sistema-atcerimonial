@@ -103,20 +103,18 @@ def render_linha_tempo(roteiro_list):
         
         obs_html = f'<div class="timeline-obs">💡 <b>Obs:</b> {obs}</div>' if obs else ""
         
-        timeline_html += f"""
-        <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-time">{horario}</div>
-            <div class="timeline-content">
-                <div class="timeline-title">{momento}</div>
-                <div class="timeline-meta">
-                    <span class="meta-badge">📍 {local}</span>
-                    <span class="meta-badge">👤 {responsavel}</span>
-                </div>
-                {obs_html}
-            </div>
-        </div>
-        """
+        timeline_html += f"""<div class="timeline-item">
+<div class="timeline-dot"></div>
+<div class="timeline-time">{horario}</div>
+<div class="timeline-content">
+<div class="timeline-title">{momento}</div>
+<div class="timeline-meta">
+<span class="meta-badge">📍 {local}</span>
+<span class="meta-badge">👤 {responsavel}</span>
+</div>
+{obs_html}
+</div>
+</div>"""
     timeline_html += '</div>'
     st.markdown(timeline_html, unsafe_allow_html=True)
 
