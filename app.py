@@ -167,6 +167,12 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 
 /* Ocultar menu sidebar padrão no celular e fixar as abas no rodapé */
 @media (max-width: 767px) {
+    [data-testid="stSidebar"] {
+        display: none !important;
+    }
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+    }
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
