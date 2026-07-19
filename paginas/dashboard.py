@@ -11,13 +11,18 @@ st.markdown(f"### Dashboard — {evento_atual['noivos']}  ·  📅 {evento_atual
 
 # ⏳ Contagem Regressiva
 from datetime import datetime
+import pytz
 try:
     data_val = str(evento_atual["data"]) if pd.notna(evento_atual["data"]) else ""
     data_evento_str = data_val.strip()
-    data_evento = datetime.strptime(data_evento_str, "%d/%m/%Y")
-    hoje = datetime.now()
-    delta = data_evento - hoje
-    dias = delta.days + 1
+    data_evento = datetime.strptime(data_evento_str, "%d/%m/%Y").date()
+    
+    # Define o fuso horário do Brasil e pega a data de hoje correta no Brasil
+    fuso_brasil = pytz.timezone('America/Sao_Paulo')
+    hoje = datetime.now(fuso_brasil).date()
+    
+    # Cálculo exato dos dias restantes
+    dias = (data_evento - hoje).days
     
     if dias > 0:
         st.info(f"💍 **Faltam {dias} dias para o grande dia! ({evento_atual['data']})**")
