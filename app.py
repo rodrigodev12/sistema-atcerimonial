@@ -157,26 +157,39 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     font-size: 14px !important;       /* Protege o tamanho das abas */
     font-weight: normal !important;   /* Tira o negrito delas */
 }
-/* Destacar e tornar mais visível o botão que chama o menu lateral (stSidebarCollapseButton / collapsedControl) */
-[data-testid="collapsedControl"] {
+/* Destacar e tornar mais visível o botão que chama o menu lateral (collapsedControl) no celular/desktop */
+[data-testid="collapsedControl"] button {
     background-color: #134074 !important;
+    color: #FFFFFF !important;
     border-radius: 8px !important;
-    padding: 3px !important;
-    margin: 8px 12px !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
-    transition: background-color 0.2s, transform 0.2s !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 8px 12px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background-color 0.2s, transform 0.1s !important;
 }
 
-[data-testid="collapsedControl"]:hover {
+[data-testid="collapsedControl"] button:hover {
     background-color: #0B2545 !important;
     transform: scale(1.05) !important;
 }
 
-[data-testid="collapsedControl"] svg {
+[data-testid="collapsedControl"] button:active {
+    transform: scale(0.95) !important;
+}
+
+[data-testid="collapsedControl"] button svg {
     color: #FFFFFF !important;
     fill: #FFFFFF !important;
-    transform: scale(1.2) !important;
+    width: 24px !important;
+    height: 24px !important;
+    transform: scale(1.4) !important;
 }
+
 
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
