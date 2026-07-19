@@ -149,13 +149,17 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     display: contents !important;
 }
 
-[data-testid="stSidebarUserContent"] > div:nth-child(1) {
+[data-testid="stSidebarUserContent"] > div {
+    display: contents !important;
+}
+
+[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
     order: 1 !important;
 }
-[data-testid="stSidebarUserContent"] > div:nth-child(2) {
+[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
     order: 2 !important;
 }
-[data-testid="stSidebarUserContent"] > div:nth-child(3) {
+[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
     order: 3 !important;
 }
 
@@ -163,7 +167,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     order: 4 !important;
 }
 
-[data-testid="stSidebarUserContent"] > div:nth-child(n+4) {
+[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
     order: 5 !important;
 }
 
