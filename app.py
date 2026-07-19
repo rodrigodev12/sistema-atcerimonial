@@ -158,17 +158,34 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     font-weight: normal !important;   /* Tira o negrito delas */
 }
 
-/* Ocultar o menu bottom_nav no desktop */
+/* Ocultar o menu tabs no desktop */
 @media (min-width: 768px) {
-    div.element-container:has(iframe[title*="bottom_nav"]) {
+    div.element-container:has(iframe[title*="tabs"]) {
         display: none !important;
     }
 }
 
-/* Ocultar menu sidebar padrão no celular */
+/* Ocultar menu sidebar padrão no celular e fixar as abas no rodapé */
 @media (max-width: 767px) {
     [data-testid="stSidebarNav"] {
         display: none !important;
+    }
+    
+    /* Fixa o componente sac.tabs no rodapé do celular */
+    div.element-container:has(iframe[title*="tabs"]) {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 999999 !important;
+        background-color: #0F172A !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 4px 10px !important;
+    }
+    
+    /* Espaço para o conteúdo não ficar coberto */
+    .main .block-container {
+        padding-bottom: 75px !important;
     }
 }
 div.stButton > button, div.stFormSubmitButton > button {
@@ -510,7 +527,7 @@ menu_com_secao = {
 
 pg = st.navigation(menu_com_secao)
 
-# --- MENU DE NAVEGAÇÃO MOBILE (BOTTOM NAV) ---
+# --- MENU DE NAVEGAÇÃO MOBILE (BOTTOM TABS) ---
 # Mapeia as opções disponíveis
 titulos_mapeados = ["Dashboard", "Briefing"]
 if is_admin:
@@ -518,15 +535,15 @@ if is_admin:
 titulos_mapeados.extend(["Checklist Noivos", "Fornecedores", "Roteiro"])
 
 itens_bottom = [
-    sac.BottomNavItem('Dashboard', icon='bar-chart-steps'),
-    sac.BottomNavItem('Briefing', icon='file-text'),
+    sac.TabsItem('Dashboard', icon='bar-chart-steps'),
+    sac.TabsItem('Briefing', icon='file-text'),
 ]
 if is_admin:
-    itens_bottom.append(sac.BottomNavItem('Cerimonial', icon='check-square'))
+    itens_bottom.append(sac.TabsItem('Cerimonial', icon='check-square'))
 itens_bottom.extend([
-    sac.BottomNavItem('Noivos', icon='heart'),
-    sac.BottomNavItem('Fornecedores', icon='shop'),
-    sac.BottomNavItem('Roteiro', icon='clock'),
+    sac.TabsItem('Noivos', icon='heart'),
+    sac.TabsItem('Fornecedores', icon='shop'),
+    sac.TabsItem('Roteiro', icon='clock'),
 ])
 
 # Encontra o índice da página atual do Streamlit
@@ -537,13 +554,14 @@ try:
 except Exception:
     pass
 
-# Renderiza o menu do rodapé
-aba_selecionada = sac.bottom_nav(
+# Renderiza o menu do rodapé usando sac.tabs com largura de contêiner preenchida
+aba_selecionada = sac.tabs(
     items=itens_bottom,
     align='center',
-    variant='filled',
+    variant='default',
     color='dark',
     index=default_index,
+    use_container_width=True,
     key='menu_celular'
 )
 
