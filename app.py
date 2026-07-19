@@ -470,4 +470,5 @@ if is_admin:
 
 lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
-st.navigation(lista_paginas)
+pg = st.navigation(lista_paginas)
+pg.run()
