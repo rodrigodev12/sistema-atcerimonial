@@ -131,7 +131,7 @@ st.markdown("""
 
 /* Ajusta o espaçamento superior gigante no topo do painel no celular e desktop */
 div[data-testid="stAppViewBlockContainer"] {
-    padding-top: 4rem !important;
+    padding-top: 2rem !important;
     padding-bottom: 2rem !important;
     padding-left: 2rem !important;
     padding-right: 2rem !important;
@@ -139,7 +139,7 @@ div[data-testid="stAppViewBlockContainer"] {
 
 @media (max-width: 768px) {
     div[data-testid="stAppViewBlockContainer"] {
-        padding-top: 3.5rem !important; /* Espaço ideal para o botão floating de abrir menu no celular */
+        padding-top: 2.2rem !important; /* Espaço mínimo e perfeito para não sobrepor o botão >> no celular */
         padding-bottom: 1.5rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
@@ -286,6 +286,14 @@ header[data-testid="stHeader"] [data-testid="stHeaderOverflowButton"],
 header[data-testid="stHeader"] [data-testid="stActionButton"] {
     display: none !important;
     visibility: hidden !important;
+}
+
+/* Força o cabeçalho a não ocupar espaço vertical, mantendo as setas visíveis */
+header[data-testid="stHeader"] {
+    height: 0px !important;
+    min-height: 0px !important;
+    overflow: visible !important;
+    background: transparent !important;
 }
 
 /* Oculta o selo "Hosted with Streamlit", o avatar de desenvolvedor, o botão Deploy e rodapé do Streamlit no canto inferior direito */
