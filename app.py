@@ -342,6 +342,23 @@ if not st.session_state.logado:
         text-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     </style>
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout') === '1') {
+        localStorage.removeItem('at_ev_token');
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    } else if (urlParams.has('ev') || urlParams.has('evento')) {
+        // Se a URL contém o token de evento mas caiu aqui na tela de login, significa que o token é inválido
+        // Limpamos o localStorage para evitar loop de redirecionamento infinito.
+        localStorage.removeItem('at_ev_token');
+    } else {
+        const savedToken = localStorage.getItem('at_ev_token');
+        if (savedToken) {
+            window.location.href = "/?ev=" + savedToken;
+        }
+    }
+    </script>
     """, unsafe_allow_html=True)
 
     _, col, _ = st.columns([1, 1.1, 1])
@@ -565,6 +582,7 @@ with st.sidebar:
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
     if st.button("🚪 Sair do Sistema", key="btn_logout"):
         st.query_params.clear()
+        st.query_params["logout"] = "1"
         for k in ["logado", "usuario", "tipo_usuario", "evento_id", "sel_ev", "novo_ev_cred"]:
             st.session_state[k] = False if k == "logado" else None
         st.rerun()
@@ -593,5 +611,17 @@ menu_com_secao = {
 }
 
 pg = st.navigation(menu_com_secao)
-
 pg.run()
+
+# Salva o token no localStorage para persistência de sessão nos noivos
+if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
+    try:
+        _ev_id = st.session_state.get("evento_id")
+        _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
+        st.markdown(f"""
+        <script>
+        localStorage.setItem('at_ev_token', '{_token}');
+        </script>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass
