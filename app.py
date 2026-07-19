@@ -137,24 +137,24 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
-}/* 1. Mira diretamente no cabeçalho clicável da seção do st.navigation */
-[data-testid="stSidebarNav"] ul li div[role="button"] {
-    font-size: 22px !important;       /* Aumenta somente o título principal */
+}/* 1. Alvo exato: O texto do primeiro elemento de cabeçalho do menu */
+[data-testid="stSidebarNav"] > ul > li:first-child div[data-anchored="true"],
+[data-testid="stSidebarNav"] div:first-child[data-anchored="true"] {
+    font-size: 22px !important;       /* Aumenta exclusivamente o título principal */
     font-weight: bold !important;     /* Deixa em negrito */
-    color: #ffffff !important;
-    padding-bottom: 10px !important;  /* Pequeno espaço interno */
+    color: #ffffff !important;        /* Cor branca */
+    padding-bottom: 15px !important;  /* Dá um pequeno espaço interno */
 }
 
 /* 2. Cria o espaçamento elegante separando o título das abas */
 [data-testid="stSidebarNavItems"] {
-    margin-top: 25px !important;      /* Empurra a lista para baixo */
+    margin-top: 30px !important;      /* Afasta a lista de abas para baixo */
 }
 
-/* 3. Garante que os nomes das abas e ícones fiquem protegidos no tamanho padrão */
-[data-testid="stSidebarNavItems"] span, 
-[data-testid="stSidebarNavItems"] data {
-    font-size: 14px !important;       /* Mantém as abas com 14px padrão */
-    font-weight: normal !important;
+/* 3. Garante que os nomes das abas voltem e fiquem no tamanho padrão */
+[data-testid="stSidebarNavItems"] span {
+    font-size: 14px !important;       /* Protege o tamanho das abas */
+    font-weight: normal !important;   /* Tira o negrito delas */
 }
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
