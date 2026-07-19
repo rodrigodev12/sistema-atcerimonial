@@ -139,22 +139,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
-/* Mira no container principal do conteúdo da barra lateral */
-section[data-testid="stSidebar"] > div div[class*="stSidebarUserContent"] {
-    display: flex !important;
-    flex-direction: column !important;
-}
 
-/* Força os botões do st.navigation a irem para baixo (Ordem 2) */
-section[data-testid="stSidebar"] nav[data-testid="stSidebarNav"] {
-    order: 2 !important;
-    margin-top: 20px !important;
-}
-
-/* Força o seu cabeçalho, perfil e selectbox a subirem (Ordem 1) */
-section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] {
-    order: 1 !important;
-}
 
 
 
@@ -299,12 +284,7 @@ evento_atual = shared.get_evento_atual()
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    # --- Topo (Itens 1, 2, 3 no Flexbox order) ---
-    st.markdown("<h2 class='notranslate' style='margin:0 0 4px;'>AT Cerimonial</h2>", unsafe_allow_html=True)
-    st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
-    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
-
-    # --- Rodapé (Itens 4 em diante no Flexbox order, mostrados abaixo do st.navigation) ---
+    # --- Rodapé (Mostrado nativamente abaixo do st.navigation) ---
     if is_admin:
         lista_ev = list(st.session_state.dados["eventos"].keys())
         if st.session_state.sel_ev not in lista_ev:
@@ -480,7 +460,7 @@ with st.sidebar:
         st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# NAVEGAÇÃO MULTIPÁGINAS NATIVA
+# NAVEGAÇÃO MULTIPÁGINAS NATIVA COM DICIONÁRIO DE SEÇÃO
 # ═══════════════════════════════════════════════════════════════════════════════
 pag_dashboard = st.Page("paginas/dashboard.py", title="Dashboard", icon=":material/bar_chart:")
 pag_briefing = st.Page("paginas/briefing.py", title="Briefing", icon=":material/description:")
@@ -496,33 +476,11 @@ if is_admin:
 
 lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
-# 🔥 INJEÇÃO JAVASCRIPT: Move os elementos fisicamente na tela de forma reativa
-components.html("""
-    <script>
-    function inverterLayout() {
-        try {
-            // Encontra a barra lateral do Streamlit
-            const sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
-            if (!sidebar) return;
+# O título da chave vira o cabeçalho fixo no topo absoluto do menu lateral!
+secao_titulo = f"AT Cerimonial ({st.session_state.tipo_usuario.upper()})"
+menu_com_secao = {
+    secao_titulo: lista_paginas
+}
 
-            // Encontra o menu de navegação e o bloco vertical de textos do usuário
-            const menuNav = sidebar.querySelector('nav[data-testid="stSidebarNav"]');
-            const userContent = sidebar.querySelector('div[data-testid="stSidebarUserContent"] div[data-testid="stVerticalBlock"]');
-
-            if (menuNav && userContent) {
-                // Insere o bloco de textos do usuário exatamente ANTES do menu de páginas
-                menuNav.parentNode.insertBefore(userContent, menuNav);
-                clearInterval(checkInterval); // Interrompe o loop ao funcionar
-            }
-        } catch (e) {
-            console.warn("Navegador bloqueou acesso cross-origin ao parent:", e);
-            clearInterval(checkInterval);
-        }
-    }
-    // Executa a checagem continuamente até que a página carregue por completo
-    const checkInterval = setInterval(inverterLayout, 200);
-    </script>
-""", height=0, width=0)
-
-pg = st.navigation(lista_paginas)
+pg = st.navigation(menu_com_secao)
 pg.run()
