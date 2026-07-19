@@ -16,7 +16,13 @@ try:
 except Exception:
     pass
 
-titulo_final = f"💍 Casamento {noivos_nome} — AT Cerimonial" if noivos_nome else "AT Cerimonial — Controle"
+if noivos_nome:
+    if "casamento" in noivos_nome.lower():
+        titulo_final = f"💍 {noivos_nome} — AT Cerimonial"
+    else:
+        titulo_final = f"💍 Casamento {noivos_nome} — AT Cerimonial"
+else:
+    titulo_final = "AT Cerimonial — Controle"
 
 st.set_page_config(
     page_title=titulo_final,
