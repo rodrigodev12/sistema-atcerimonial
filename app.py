@@ -129,23 +129,15 @@ st.markdown("""
 
 .stApp { background: #F1F5F9; font-family: 'Inter', sans-serif; }
 
-/* Ajusta o espaçamento superior gigante no topo do painel no celular e desktop */
-.stApp [data-testid="stAppViewBlockContainer"] .block-container {
-    margin-top: -3.2rem !important; /* Puxa o conteúdo para cima da área do cabeçalho transparente */
-    padding-top: 1.5rem !important;
-    padding-bottom: 2rem !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
-}
-
-@media (max-width: 768px) {
-    .stApp [data-testid="stAppViewBlockContainer"] .block-container {
-        margin-top: -3.2rem !important;
-        padding-top: 1.8rem !important; /* Mantém um pequeno espaço para não sobrepor o botão >> no celular */
-        padding-bottom: 1.5rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
+/* Remove o grande espaço em branco no topo gerado pelo Streamlit */
+/* Usando múltiplos seletores para garantir que um deles funcione */
+.block-container,
+[data-testid="stAppViewBlockContainer"] > div,
+[data-testid="stAppViewBlockContainer"] > div > div,
+[data-testid="stMainBlockContainer"],
+div.block-container {
+    padding-top: 1rem !important;
+    margin-top: 0 !important;
 }
 
 /* ── Sidebar ── */
