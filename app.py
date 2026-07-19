@@ -139,36 +139,18 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
-/* Reordenar os elementos do sidebar (Header no topo, Nav no meio, Resto abaixo) */
-[data-testid="stSidebarContent"] {
+/* Altera o container da sidebar para o modo Flexbox invertido */
+[data-testid="stSidebarUserContent"] {
     display: flex !important;
     flex-direction: column !important;
 }
-
-[data-testid="stSidebarUserContent"] {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div {
-    display: contents !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(1) {
-    order: 1 !important;
-}
-[data-testid="stSidebarUserContent"] > div > div:nth-child(2) {
+/* Joga a lista de páginas do st.navigation para baixo */
+[data-testid="stSidebarNavItems"] {
     order: 2 !important;
 }
-[data-testid="stSidebarUserContent"] > div > div:nth-child(3) {
-    order: 3 !important;
-}
-
-[data-testid="stSidebarNav"] {
-    order: 4 !important;
-}
-
-[data-testid="stSidebarUserContent"] > div > div:nth-child(n+4) {
-    order: 5 !important;
+/* Joga todo o resto do seu código (Título, Perfil, Selectbox) para cima */
+[data-testid="stVerticalBlock"] {
+    order: 1 !important;
 }
 
 
