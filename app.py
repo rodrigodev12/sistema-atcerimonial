@@ -355,7 +355,7 @@ if not st.session_state.logado:
     } else {
         const savedToken = localStorage.getItem('at_ev_token');
         if (savedToken) {
-            window.location.href = "/?ev=" + savedToken;
+            window.location.href = window.location.pathname + "?ev=" + savedToken;
         }
     }
     </script>
@@ -402,6 +402,19 @@ if not st.session_state.logado:
 
 is_admin = st.session_state.tipo_usuario == "admin"
 evento_atual = shared.get_evento_atual()
+
+# Salva o token no localStorage para persistência de sessão nos noivos
+if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
+    try:
+        _ev_id = st.session_state.get("evento_id")
+        _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
+        st.markdown(f"""
+        <script>
+        localStorage.setItem('at_ev_token', '{_token}');
+        </script>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR
@@ -612,16 +625,3 @@ menu_com_secao = {
 
 pg = st.navigation(menu_com_secao)
 pg.run()
-
-# Salva o token no localStorage para persistência de sessão nos noivos
-if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
-    try:
-        _ev_id = st.session_state.get("evento_id")
-        _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
-        st.markdown(f"""
-        <script>
-        localStorage.setItem('at_ev_token', '{_token}');
-        </script>
-        """, unsafe_allow_html=True)
-    except Exception:
-        pass
