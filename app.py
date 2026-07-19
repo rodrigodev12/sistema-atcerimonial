@@ -130,16 +130,18 @@ st.markdown("""
 .stApp { background: #F1F5F9; font-family: 'Inter', sans-serif; }
 
 /* Ajusta o espaçamento superior gigante no topo do painel no celular e desktop */
-div[data-testid="stAppViewBlockContainer"] {
-    padding-top: 2rem !important;
+.stApp [data-testid="stAppViewBlockContainer"] .block-container {
+    margin-top: -3.2rem !important; /* Puxa o conteúdo para cima da área do cabeçalho transparente */
+    padding-top: 1.5rem !important;
     padding-bottom: 2rem !important;
     padding-left: 2rem !important;
     padding-right: 2rem !important;
 }
 
 @media (max-width: 768px) {
-    div[data-testid="stAppViewBlockContainer"] {
-        padding-top: 2.2rem !important; /* Espaço mínimo e perfeito para não sobrepor o botão >> no celular */
+    .stApp [data-testid="stAppViewBlockContainer"] .block-container {
+        margin-top: -3.2rem !important;
+        padding-top: 1.8rem !important; /* Mantém um pequeno espaço para não sobrepor o botão >> no celular */
         padding-bottom: 1.5rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
@@ -288,12 +290,15 @@ header[data-testid="stHeader"] [data-testid="stActionButton"] {
     visibility: hidden !important;
 }
 
-/* Força o cabeçalho a não ocupar espaço vertical, mantendo as setas visíveis */
+/* Mantém o cabeçalho no tamanho padrão, mas deixa-o totalmente transparente */
 header[data-testid="stHeader"] {
-    height: 0px !important;
-    min-height: 0px !important;
+    height: 3.75rem !important;
+    min-height: 3.75rem !important;
     overflow: visible !important;
     background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* Oculta o selo "Hosted with Streamlit", o avatar de desenvolvedor, o botão Deploy e rodapé do Streamlit no canto inferior direito */
