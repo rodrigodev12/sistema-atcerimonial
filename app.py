@@ -100,6 +100,26 @@ components.html("""
     aplicarMascaraData();
     const observer = new MutationObserver(aplicarMascaraData);
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
+
+    // OCULTAR BADGES DE DEPLOY E AVATAR DO COMMUNITY CLOUD NO DOCUMENTO PAI
+    const ocultarBadgesCC = () => {
+        try {
+            const doc = window.parent.document;
+            const badges = doc.querySelectorAll('.viewerBadge_container__1QSob, .styles_viewerBadge__1yB5_, .viewerBadge_link__1S137, [class*="viewerBadge"], [class*="ViewerBadge"], [id*="ViewerBadge"]');
+            for (const b of badges) {
+                b.style.display = 'none';
+                b.style.visibility = 'hidden';
+            }
+            const deployBtn = doc.querySelector('[data-testid="stAppDeployButton"], button[class*="deploy"]');
+            if (deployBtn) {
+                deployBtn.style.display = 'none';
+                deployBtn.style.visibility = 'hidden';
+            }
+        } catch(e) {}
+    };
+    ocultarBadgesCC();
+    const observerBadges = new MutationObserver(ocultarBadgesCC);
+    observerBadges.observe(window.parent.document.body, { childList: true, subtree: true });
 </script>
 """, height=0, width=0)
 
@@ -243,13 +263,13 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     padding: 12px 16px;
 }
 
-/* Oculta cabeçalho (Fork, GitHub, menu de 3 pontos) e rodapé/status do Streamlit */
-header[data-testid="stHeader"] {
+/* Oculta os botões do canto superior direito do cabeçalho (Fork, GitHub, menu de 3 pontos) sem afetar a seta de abrir/fechar o menu */
+header[data-testid="stHeader"] a,
+header[data-testid="stHeader"] button:not([data-testid="stSidebarCollapseButton"]) {
+    display: none !important;
     visibility: hidden !important;
 }
-button[data-testid="stSidebarCollapseButton"] {
-    visibility: visible !important;
-}
+
 .stAppDeployButton,
 .stDeployButton,
 .viewerBadge,
