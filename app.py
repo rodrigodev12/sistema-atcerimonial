@@ -1,16 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
-import json
 import os
-import io
-import random
-import string
-import secrets
-from itertools import groupby
-from supabase import create_client, Client
-import streamlit_antd_components as sac
-
+import shared
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -41,12 +33,11 @@ components.html("""
         }
     };
     desativarTraducao();
-    // Garante a aplicação caso o DOM ainda esteja carregando
     window.parent.addEventListener('DOMContentLoaded', desativarTraducao);
     setTimeout(desativarTraducao, 500);
     setTimeout(desativarTraducao, 1500);
 
-    // MÁSCARA DE DATA AUTOMÁTICA (Real-time formatting)
+    // MÁSCARA DE DATA AUTOMÁTICA
     const aplicarMascaraData = () => {
         const labels = window.parent.document.querySelectorAll('label');
         for (const label of labels) {
@@ -76,12 +67,10 @@ components.html("""
                                 formatted += '/' + value.slice(4, 8);
                             }
                             
-                            // Evita recursão infinita se o valor já estiver correto
                             if (e.target.value === formatted) {
                                 return;
                             }
                             
-                            // Define valor através do setter nativo do React
                             nativeInputValueSetter.call(e.target, formatted);
                             e.target.dispatchEvent(new Event('input', { bubbles: true }));
                         });
@@ -91,7 +80,6 @@ components.html("""
         }
     };
 
-    // Executa e observa mudanças no DOM
     aplicarMascaraData();
     const observer = new MutationObserver(aplicarMascaraData);
     observer.observe(window.parent.document.body, { childList: true, subtree: true });
@@ -112,8 +100,6 @@ section[data-testid="stSidebar"] .block-container {
     background-color: #0B2545 !important;
 }
 
-/* Força fundo transparente em TODOS os elementos internos da sidebar */
-/* Texto da sidebar sempre branco */
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] span,
 section[data-testid="stSidebar"] small,
@@ -126,8 +112,6 @@ section[data-testid="stSidebar"] a {
     color: #FFFFFF !important;
 }
 
-
-/* Corrige tarja branca: containers internos com fundo transparente */
 section[data-testid="stSidebar"] .stMarkdown,
 section[data-testid="stSidebar"] .stMarkdown > div,
 section[data-testid="stSidebar"] .element-container,
@@ -138,28 +122,23 @@ section[data-testid="stSidebar"] .stCheckbox {
     background:       transparent !important;
 }
 
-/* Expanders na sidebar */
 section[data-testid="stSidebar"] [data-testid="stExpander"],
 section[data-testid="stSidebar"] details summary {
     background-color: rgba(255,255,255,0.08) !important;
     border-color: rgba(255,255,255,0.15) !important;
 }
 
-/* Inputs na sidebar: texto escuro sobre fundo branco */
 section[data-testid="stSidebar"] input {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
 }
-/* Selectbox na sidebar */
+
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"],
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
 }
 
-/* ════════════════════════════════════════════════
-   BOTÕES — Azul marinho em qualquer tema
-════════════════════════════════════════════════ */
 div.stButton > button, div.stFormSubmitButton > button {
     background-color: #134074 !important;
     color: #FFFFFF !important;
@@ -176,7 +155,6 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     color: #FFFFFF !important;
 }
 
-/* ── Alert rows (urgency list) ── */
 .alert-row {
     background: #FFF7ED;
     border-left: 4px solid #F97316;
@@ -187,7 +165,6 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     color: #0F172A;
 }
 
-/* ── Briefing read-only field ── */
 .bf-field {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -199,7 +176,6 @@ div.stButton > button *, div.stFormSubmitButton > button * {
 }
 .bf-label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; margin-bottom: 4px; }
 
-/* ── Metrics ── */
 [data-testid="stMetric"] {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -210,396 +186,10 @@ div.stButton > button *, div.stFormSubmitButton > button * {
 """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CONSTANTES
-# ═══════════════════════════════════════════════════════════════════════════════
-DB_FILE = "eventos_db.json"
-
-SETORES_PADRAO = [
-    "Igreja / local da cerimônia", "Celebrante", "Carro da noiva",
-    "Músicos cerimônia religiosa", "Instrumento extra", "Dia da noiva", "Dia do noivo",
-    "Fotógrafo", "Salão de festas / sítio", "Buffet", "Comida Japonesa", "Disk Bebidas",
-    "Decoração", "Luz / Som / Pista de dança", "Banda principal", "DJ",
-    "Iluminação cênica", "Tenda / palco / tablado", "Doces 01", "Doces 02",
-    "Bolo fake / maquete do bolo", "Lembranças (bem casados??)", "Sobremesa",
-    "Cabine de fotos", "Brinquedos Espaço Kids", "Recreação Infantil", "Segurança",
-    "Limpeza / Vassourinha de ouro", "Gerador de energia", "Hotel Noite de Núpcias",
-    "Vans", "Ambulância",
-]
-
-STATUS_OPCOES = [
-    "Orçando", "Dados enviados", "Contrato recebido",
-    "Análise concluída / liberado para assinatura",
-    "Aguardando assinatura do CONTRATADO", "CONTRATADO", "Não haverá",
-]
-
-STATUS_CORES = {
-    "Orçando":                                              "#DC2626",
-    "Dados enviados":                                       "#2563EB",
-    "Contrato recebido":                                    "#D97706",
-    "Análise concluída / liberado para assinatura":         "#7C3AED",
-    "Aguardando assinatura do CONTRATADO":                  "#0891B2",
-    "CONTRATADO":                                           "#16A34A",
-    "Não haverá":                                           "#94A3B8",
-}
-
-CHECKLIST_CERIMONIAL_PADRAO = [
-    {"id": "cc01", "grupo": "12 meses antes", "tarefa": "Reunião inicial de planejamento e cronograma geral"},
-    {"id": "cc02", "grupo": "12 meses antes", "tarefa": "Auxílio na definição e controle do orçamento do casamento"},
-    {"id": "cc03", "grupo": "9 meses antes",  "tarefa": "Apresentação e validação de propostas de fornecedores essenciais (Buffet, Fotografia, Decoração)"},
-    {"id": "cc04", "grupo": "6 meses antes",  "tarefa": "Reunião técnica para alinhamento do layout físico do evento"},
-    {"id": "cc05", "grupo": "6 meses antes",  "tarefa": "Verificar documentações exigidas para o casamento civil/religioso com efeitos civis"},
-    {"id": "cc06", "grupo": "3 meses antes",  "tarefa": "Revisão geral de todos os contratos de fornecedores fechados até o momento"},
-    {"id": "cc07", "grupo": "2 meses antes",  "tarefa": "Início da elaboração do roteiro detalhado do dia do evento"},
-    {"id": "cc08", "grupo": "2 meses antes",  "tarefa": "Enviar cronograma macro do evento para alinhamento de fornecedores parceiros"},
-    {"id": "cc09", "grupo": "2 meses antes",  "tarefa": "Reunião de alinhamento técnico de som, luz, imagem e decoração"},
-    {"id": "cc10", "grupo": "1 mês antes",    "tarefa": "Enviar roteiro oficial final detalhado para todos os fornecedores contratados"},
-    {"id": "cc11", "grupo": "1 mês antes",    "tarefa": "Realizar vistoria técnica final no local da cerimônia e recepção"},
-    {"id": "cc12", "grupo": "1 semana antes", "tarefa": "Confirmar horários exatos de montagem, chegada e saída de todas as equipes"},
-    {"id": "cc13", "grupo": "1 semana antes", "tarefa": "Coordenar o ensaio prático do cortejo com noivos, pais e padrinhos"},
-    {"id": "cc14", "grupo": "1 semana antes", "tarefa": "Elaborar o checklist de materiais e itens pessoais da noiva para o dia do casamento"},
-    {"id": "cc15", "grupo": "1 semana antes", "tarefa": "Recebimento de cheques/envelopes de pagamentos finais destinados aos fornecedores"},
-]
-
-CHECKLIST_NOIVOS_PADRAO = [
-    {"id": "cn01", "grupo": "12 meses antes", "tarefa": "Definir a data do casamento e reservar o local da cerimônia/recepção"},
-    {"id": "cn02", "grupo": "12 meses antes", "tarefa": "Contratar o cerimonialista / assessoria"},
-    {"id": "cn03", "grupo": "12 meses antes", "tarefa": "Definir o orçamento máximo de investimento para o evento"},
-    {"id": "cn04", "grupo": "12 meses antes", "tarefa": "Elaborar a primeira lista preliminar de convidados"},
-    {"id": "cn05", "grupo": "9 meses antes",  "tarefa": "Contratar fotógrafo e cinegrafista (videomaker)"},
-    {"id": "cn06", "grupo": "9 meses antes",  "tarefa": "Escolher buffet, decoração e serviços de bar"},
-    {"id": "cn07", "grupo": "9 meses antes",  "tarefa": "Pesquisar roteiros e pacotes para a Lua de Mel"},
-    {"id": "cn08", "grupo": "6 meses antes",  "tarefa": "Definir o vestido de noiva e acessórios (véu, grinalda, sapatos)"},
-    {"id": "cn09", "grupo": "6 meses antes",  "tarefa": "Escolher o traje do noivo e sapatos"},
-    {"id": "cn10", "grupo": "6 meses antes",  "tarefa": "Convidar formalmente os padrinhos, madrinhas, pajens e daminhas"},
-    {"id": "cn11", "grupo": "6 meses antes",  "tarefa": "Criar o site dos noivos e definir a lista de presentes virtuais/físicos"},
-    {"id": "cn12", "grupo": "6 meses antes",  "tarefa": "Agendar e realizar a sessão fotográfica de pré-wedding"},
-    {"id": "cn13", "grupo": "3 meses antes",  "tarefa": "Escolher e encomendar as alianças do casal"},
-    {"id": "cn14", "grupo": "3 meses antes",  "tarefa": "Realizar a degustação final de doces, bolo e pratos do buffet"},
-    {"id": "cn15", "grupo": "3 meses antes",  "tarefa": "Enviar os convites físicos ou digitais para todos os convidados"},
-    {"id": "cn16", "grupo": "2 meses antes",  "tarefa": "Entregar as lembranças/convites especiais dos padrinhos, pajens e daminhas"},
-    {"id": "cn17", "grupo": "2 meses antes",  "tarefa": "Contratar maquiagem e cabelo da noiva e noivo (Dia da Noiva/Noivo)"},
-    {"id": "cn18", "grupo": "1 mês antes",    "tarefa": "Dar entrada na documentação do casamento civil no Cartório"},
-    {"id": "cn19", "grupo": "1 mês antes",    "tarefa": "Acompanhar e atualizar o controle de RSVP (confirmações de presença)"},
-    {"id": "cn20", "grupo": "1 mês antes",    "tarefa": "Fazer as últimas provas do vestido de noiva e terno do noivo"},
-    {"id": "cn21", "grupo": "1 semana antes", "tarefa": "Preparar as malas e documentos para a viagem de Lua de Mel"},
-    {"id": "cn22", "grupo": "1 semana antes", "tarefa": "Retirar o vestido de noiva e traje do noivo nos ateliês"},
-    {"id": "cn23", "grupo": "1 semana antes", "tarefa": "Participar do ensaio geral da cerimônia no local reservado"},
-]
-
-CHECKLIST_PADRAO = CHECKLIST_CERIMONIAL_PADRAO + CHECKLIST_NOIVOS_PADRAO
-
-ROTEIRO_PADRAO = [
-    {"HORÁRIO": "09:00", "MOMENTO": "Início da montagem do salão",               "RESPONSÁVEL": "Decoração",       "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "12:00", "MOMENTO": "Chegada do buffet e montagem da cozinha",   "RESPONSÁVEL": "Buffet",          "LOCAL": "Cozinha",         "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "14:00", "MOMENTO": "Instalação de som, luz e pista de dança",   "RESPONSÁVEL": "Luz / Som",       "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "16:00", "MOMENTO": "Ensaio fotográfico pré-cerimônia",          "RESPONSÁVEL": "Fotógrafo",       "LOCAL": "Local cerimônia", "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "17:00", "MOMENTO": "Chegada dos padrinhos e madrinhas",         "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Cerimônia",       "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "17:30", "MOMENTO": "Abertura dos portões para convidados",      "RESPONSÁVEL": "Segurança",       "LOCAL": "Entrada",         "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "18:00", "MOMENTO": "Início da cerimônia",                       "RESPONSÁVEL": "Celebrante",      "LOCAL": "Cerimônia",       "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "18:05", "MOMENTO": "Entrada dos padrinhos",                     "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Cerimônia",       "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "18:15", "MOMENTO": "Entrada da noiva",                          "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Cerimônia",       "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "18:45", "MOMENTO": "Encerramento da cerimônia / saída dos noivos", "RESPONSÁVEL": "Celebrante",  "LOCAL": "Cerimônia",       "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "19:00", "MOMENTO": "Início do coquetel",                        "RESPONSÁVEL": "Buffet",          "LOCAL": "Área coquetel",   "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "19:30", "MOMENTO": "Sessão de fotos dos noivos",                "RESPONSÁVEL": "Fotógrafo",       "LOCAL": "Jardim",          "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "20:30", "MOMENTO": "Abertura do salão / entrada dos convidados","RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "21:00", "MOMENTO": "Entrada dos noivos no salão",               "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "21:15", "MOMENTO": "Primeira dança dos noivos",                 "RESPONSÁVEL": "DJ / Banda",      "LOCAL": "Pista",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "21:30", "MOMENTO": "Jantar",                                    "RESPONSÁVEL": "Buffet",          "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "22:30", "MOMENTO": "Corte do bolo",                             "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "22:45", "MOMENTO": "Animação e música ao vivo",                 "RESPONSÁVEL": "Banda / DJ",      "LOCAL": "Pista",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "23:00", "MOMENTO": "Jogamento do buquê",                        "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Pista",           "OBSERVAÇÃO": ""},
-    {"HORÁRIO": "00:30", "MOMENTO": "Despedida e encerramento do evento",        "RESPONSÁVEL": "Cerimonialista",  "LOCAL": "Salão",           "OBSERVAÇÃO": ""},
-]
-
-BRIEFING_DEFAULTS = {
-    "estilo": "", "convidados": "", "cores": "",
-    "alimentar": "", "musica": "", "obs": "",
-}
-
-LARGURAS_PADRAO = {
-    "SETOR": 180,
-    "EMPRESA": 180,
-    "RESPONSÁVEL": 150,
-    "CEL/TEL": 120,
-    "VALOR CONTRATO": 120,
-    "HORA EXTRA": 120,
-    "INSTAGRAM": 120,
-    "OBSERVAÇÃO": 300,
-    "STATUS": 180,
-}
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def gerar_link_token() -> str:
-    return secrets.token_hex(12)
-
-
-def _novo_evento(noivos: str, data: str) -> dict:
-    """Cria estrutura completa de um novo evento."""
-    return {
-        "noivos": noivos,
-        "data": data,
-        "link_token": gerar_link_token(),
-        "fornecedores": [
-            {"SETOR": s, "EMPRESA": "", "RESPONSÁVEL": "", "CEL/TEL": "",
-             "HORA EXTRA": 0.0, "VALOR CONTRATO": 0.0, "INSTAGRAM": "", "OBSERVAÇÃO": "", "STATUS": "Orçando"}
-            for s in SETORES_PADRAO
-        ],
-        "checklist_cerimonial": [
-            {"id": item["id"], "grupo": item["grupo"], "tarefa": item["tarefa"], "feito": False}
-            for item in CHECKLIST_CERIMONIAL_PADRAO
-        ],
-        "checklist_noivos": [
-            {"id": item["id"], "grupo": item["grupo"], "tarefa": item["tarefa"], "feito": False}
-            for item in CHECKLIST_NOIVOS_PADRAO
-        ],
-        "briefing": dict(BRIEFING_DEFAULTS),
-        "roteiro": [r.copy() for r in ROTEIRO_PADRAO],
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# CONEXÃO SUPABASE
-# ═══════════════════════════════════════════════════════════════════════════════
-try:
-    SUPABASE_URL = os.environ.get("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
-except Exception:
-    SUPABASE_URL = os.environ.get("SUPABASE_URL")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
-        supabase_client = None
-else:
-    supabase_client = None
-
-
-def _dados_iniciais() -> dict:
-    return {
-        "usuarios": {
-            "atcerimonial": {"senha": "Linhares@26", "tipo": "admin"},
-            "maria_joao":  {"senha": "at01",  "tipo": "cliente", "evento_id": "ev_01"},
-        },
-        "eventos": {
-            "ev_01": _novo_evento("Maria & João", "10/10/2026"),
-        },
-    }
-
-
-def carregar_dados() -> dict:
-    dados = None
-    if supabase_client:
-        try:
-            response = supabase_client.table("at_cerimonial").select("data").eq("id", "dados_sistema").execute()
-            if response.data:
-                dados = response.data[0]["data"]
-            else:
-                if os.path.exists(DB_FILE):
-                    try:
-                        with open(DB_FILE, "r", encoding="utf-8") as f:
-                            dados = json.load(f)
-                    except Exception:
-                        dados = _dados_iniciais()
-                else:
-                    dados = _dados_iniciais()
-                supabase_client.table("at_cerimonial").insert({"id": "dados_sistema", "data": dados}).execute()
-        except Exception as e:
-            st.error(f"Erro ao carregar dados do Supabase: {e}")
-            dados = None
-
-    if dados is None:
-        if not os.path.exists(DB_FILE):
-            dados = _dados_iniciais()
-            salvar_dados(dados)
-            return dados
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            dados = json.load(f)
-        
-    # --- MIGRAÇÃO AUTOMÁTICA DE FORMATOS ANTIGOS ---
-    modificado = False
-    for ev_id, ev in dados.get("eventos", {}).items():
-        # 1. Garantir coluna "VALOR CONTRATO" em fornecedores
-        for forn in ev.get("fornecedores", []):
-            if "VALOR CONTRATO" not in forn:
-                forn["VALOR CONTRATO"] = 0.0
-                modificado = True
-                
-        # 2. Migração do Checklist Único para split (Cerimonial + Noivos)
-        if "checklist" in ev:
-            old_checklist = ev.pop("checklist")
-            if isinstance(old_checklist, dict):
-                new_list = []
-                for item in CHECKLIST_PADRAO:
-                    new_list.append({
-                        "id": item["id"],
-                        "grupo": item["grupo"],
-                        "tarefa": item["tarefa"],
-                        "feito": old_checklist.get(item["id"], False)
-                    })
-                old_checklist = new_list
-            
-            # Atribui o antigo ao Cerimonial
-            ev["checklist_cerimonial"] = old_checklist
-            # Inicializa Noivos com padrão
-            ev["checklist_noivos"] = [
-                {"id": item["id"], "grupo": item["grupo"], "tarefa": item["tarefa"], "feito": False}
-                for item in CHECKLIST_NOIVOS_PADRAO
-            ]
-            modificado = True
-
-        if "checklist_cerimonial" not in ev:
-            ev["checklist_cerimonial"] = [
-                {"id": item["id"], "grupo": item["grupo"], "tarefa": item["tarefa"], "feito": False}
-                for item in CHECKLIST_CERIMONIAL_PADRAO
-            ]
-            modificado = True
-
-        if "checklist_noivos" not in ev:
-            ev["checklist_noivos"] = [
-                {"id": item["id"], "grupo": item["grupo"], "tarefa": item["tarefa"], "feito": False}
-                for item in CHECKLIST_NOIVOS_PADRAO
-            ]
-            modificado = True
-            
-        # 3. Garantir que "feito" seja booleano (não NaN ou None) em ambos os checklists
-        for key in ["checklist_cerimonial", "checklist_noivos"]:
-            if isinstance(ev.get(key), list):
-                for item in ev[key]:
-                    val = item.get("feito")
-                    if pd.isna(val) or val is None:
-                        item["feito"] = False
-                        modificado = True
-                        
-        # 4. Garantir link_token aleatório para o evento
-        if "link_token" not in ev:
-            ev["link_token"] = gerar_link_token()
-            modificado = True
-            
-    if modificado:
-        salvar_dados(dados)
-        
-    return dados
-
-
-def salvar_dados(dados: dict) -> None:
-    if supabase_client:
-        try:
-            supabase_client.table("at_cerimonial").update({"data": dados}).eq("id", "dados_sistema").execute()
-            return
-        except Exception as e:
-            st.error(f"Erro ao salvar dados no Supabase: {e}")
-            
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=2, ensure_ascii=False)
-
-
-
-def toggle_checklist_item(ev_id: str, item_id: str, key: str, tipo_ck: str) -> None:
-    ev = dados["eventos"].get(ev_id)
-    if ev:
-        lista_nome = "checklist_cerimonial" if tipo_ck == "cerimonial" else "checklist_noivos"
-        for item in ev.get(lista_nome, []):
-            if item["id"] == item_id:
-                item["feito"] = st.session_state[key]
-                salvar_dados(dados)
-                st.toast("Checklist salvo!", icon="✅")
-                break
-
-
-def update_briefing_field(ev_id: str, field_name: str, key: str) -> None:
-    ev = dados["eventos"].get(ev_id)
-    if ev:
-        if "briefing" not in ev:
-            ev["briefing"] = {}
-        ev["briefing"][field_name] = st.session_state[key]
-        salvar_dados(dados)
-        st.toast("Briefing atualizado!", icon="📝")
-
-
-def get_ev(dados: dict, ev_id: str) -> dict:
-    """Acesso seguro a um evento. Nunca usar dados[ev_id] diretamente."""
-    return dados["eventos"][ev_id]
-
-
-def gerar_ev_id() -> str:
-    return "ev_" + "".join(random.choices(string.digits, k=6))
-
-
-def gerar_senha(n: int = 6) -> str:
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=n))
-
-
-def obter_link_acesso(ev_id: str) -> str:
-    # Resolve o token de acesso (link_token) a partir do ev_id
-    token = ev_id
-    try:
-        if 'dados' in globals() and isinstance(dados, dict) and "eventos" in dados:
-            if ev_id in dados["eventos"]:
-                token = dados["eventos"][ev_id].get("link_token", ev_id)
-    except Exception:
-        pass
-
-    try:
-        from streamlit.web.server.websocket_headers import _get_websocket_headers
-        headers = _get_websocket_headers()
-        if headers:
-            host = headers.get("Host")
-            if host and "localhost" not in host and "127.0.0.1" not in host:
-                proto = headers.get("X-Forwarded-Proto", "https" if "streamlit.app" in host else "http")
-                return f"{proto}://{host}/?ev={token}"
-    except Exception:
-        pass
-    
-    if os.name == 'nt':
-        return f"http://localhost:8501/?ev={token}"
-    return f"https://sistema-atcerimonial.streamlit.app/?ev={token}"
-
-
-
-def exportar_excel(evento: dict) -> bytes:
-    buf = io.BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        pd.DataFrame(evento["fornecedores"]).to_excel(
-            writer, sheet_name="Fornecedores", index=False
-        )
-        pd.DataFrame(evento.get("roteiro", ROTEIRO_PADRAO)).to_excel(
-            writer, sheet_name="Roteiro", index=False
-        )
-    buf.seek(0)
-    return buf.getvalue()
-
-
-def get_checklist_cerimonial(evento: dict) -> list:
-    return evento.get("checklist_cerimonial", [])
-
-
-def get_checklist_noivos(evento: dict) -> list:
-    return evento.get("checklist_noivos", [])
-
-
-def get_briefing(evento: dict) -> dict:
-    return {**BRIEFING_DEFAULTS, **evento.get("briefing", {})}
-
-
-def bf_field(label: str, valor) -> None:
-    """Renderiza campo de briefing em modo leitura."""
-    val_str = str(valor) if pd.notna(valor) and valor is not None else ""
-    conteudo = val_str.strip() if val_str.strip() else "<em style='opacity:0.45;'>Não informado</em>"
-    st.markdown(
-        f"<div class='bf-field'><div class='bf-label'>{label}</div>{conteudo}</div>",
-        unsafe_allow_html=True,
-    )
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # DADOS & SESSION STATE
 # ═══════════════════════════════════════════════════════════════════════════════
-dados = carregar_dados()
+if "dados" not in st.session_state:
+    st.session_state.dados = shared.carregar_dados()
 
 _ss_defaults = {
     "logado": False, "usuario": None, "tipo_usuario": None, "evento_id": None,
@@ -609,13 +199,12 @@ for k, v in _ss_defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# Recupera sessão por link direto do evento (ex: ?ev=cx78a2e9b) ou por parâmetro de sessão (F5)
+# Recupera sessão por link direto do evento ou parâmetro de sessão
 if not st.session_state.logado:
-    # 1. Verifica se está acessando via link direto de evento
     ev_id_url = st.query_params.get("evento") or st.query_params.get("ev")
     if ev_id_url:
         evento_encontrado_id = None
-        for ev_id, ev in dados.get("eventos", {}).items():
+        for ev_id, ev in st.session_state.dados.get("eventos", {}).items():
             if ev.get("link_token") == ev_id_url or ev_id == ev_id_url:
                 evento_encontrado_id = ev_id
                 break
@@ -629,9 +218,9 @@ if not st.session_state.logado:
             )
             st.rerun()
 else:
-    # Se já está logado, garante que a URL fique limpa e sem tokens de sessão expostos
     if "session" in st.query_params:
         del st.query_params["session"]
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # TELA DE LOGIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -661,7 +250,7 @@ if not st.session_state.logado:
                     submitted = st.form_submit_button("Entrar no Painel")
 
             if submitted:
-                usr = dados["usuarios"].get(u)
+                usr = st.session_state.dados["usuarios"].get(u)
                 if usr and usr["senha"] == s:
                     st.query_params.clear()
                     st.session_state.update(
@@ -680,6 +269,7 @@ if not st.session_state.logado:
     st.stop()
 
 is_admin = st.session_state.tipo_usuario == "admin"
+evento_atual = shared.get_evento_atual()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR
@@ -689,33 +279,8 @@ with st.sidebar:
     st.markdown(f"Perfil: **{st.session_state.tipo_usuario.upper()}**")
     st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
 
-    # Menu de navegação lateral dinâmico (Streamlit Antd Components)
-    itens_menu = [
-        sac.MenuItem('Dashboard', icon='bar-chart-steps'),
-        sac.MenuItem('Briefing', icon='file-text'),
-    ]
-
     if is_admin:
-        itens_menu.append(sac.MenuItem('Checklist Cerimonial', icon='check-square'))
-
-    itens_menu.extend([
-        sac.MenuItem('Checklist Noivos', icon='heart'),
-        sac.MenuItem('Fornecedores', icon='shop'),
-        sac.MenuItem('Roteiro', icon='clock'),
-    ])
-
-    aba_selecionada = sac.menu(
-        itens_menu,
-        format_func=lambda x: x,
-        variant='light',
-        color='dark',
-        open_all=True
-    )
-    st.markdown("<hr style='opacity:.15; margin:10px 0;'>", unsafe_allow_html=True)
-
-    if is_admin:
-        lista_ev = list(dados["eventos"].keys())
-        # Valida sel_ev
+        lista_ev = list(st.session_state.dados["eventos"].keys())
         if st.session_state.sel_ev not in lista_ev:
             st.session_state.sel_ev = lista_ev[0]
 
@@ -723,16 +288,14 @@ with st.sidebar:
             "Evento Ativo",
             lista_ev,
             index=lista_ev.index(st.session_state.sel_ev),
-            format_func=lambda x: dados["eventos"][x]["noivos"],
+            format_func=lambda x: st.session_state.dados["eventos"][x]["noivos"],
             key="sb_ev",
         )
         st.session_state.sel_ev = st.session_state.evento_id
 
-        full_link = obter_link_acesso(st.session_state.evento_id)
+        full_link = shared.obter_link_acesso(st.session_state.evento_id)
 
-        # Exibe o link de acesso dos noivos para o evento ativo
         st.markdown("**🔗 Link de Acesso do Casal:**")
-        import streamlit.components.v1 as components
         components.html(f"""
         <style>
           * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }}
@@ -816,7 +379,6 @@ with st.sidebar:
 
         st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
 
-        # ── Criar novo evento ──────────────────────────────────────────────
         with st.expander("➕ Criar Novo Evento"):
             with st.form("form_criar_ev", clear_on_submit=True):
                 ne_noivos = st.text_input("Noivos", placeholder="Ex: Carla & Lucas")
@@ -827,26 +389,24 @@ with st.sidebar:
                 if not (ne_noivos and ne_data):
                     st.warning("Preencha todos os campos.")
                 else:
-                    # Formata a data se o usuário tiver digitado sem barras (ex: 28092026 -> 28/09/2026)
                     data_limpa = "".join(filter(str.isdigit, ne_data))
                     if len(data_limpa) == 8:
                         ne_data = f"{data_limpa[:2]}/{data_limpa[2:4]}/{data_limpa[4:]}"
                     elif len(data_limpa) == 6:
                         ne_data = f"{data_limpa[:2]}/{data_limpa[2:4]}/20{data_limpa[4:]}"
 
-                    ev_id = gerar_ev_id()
-                    dados["eventos"][ev_id] = _novo_evento(ne_noivos, ne_data)
-                    salvar_dados(dados)
+                    ev_id = shared.gerar_ev_id()
+                    st.session_state.dados["eventos"][ev_id] = shared._novo_evento(ne_noivos, ne_data)
+                    shared.salvar_dados(st.session_state.dados)
                     st.session_state.sel_ev = ev_id
                     st.session_state.novo_ev_cred = {
                         "noivos": ne_noivos, "ev_id": ev_id
                     }
                     st.rerun()
 
-        # Exibe credenciais do evento recém-criado
         if st.session_state.novo_ev_cred:
             c = st.session_state.novo_ev_cred
-            link_acesso = obter_link_acesso(c['ev_id'])
+            link_acesso = shared.obter_link_acesso(c['ev_id'])
             st.success(
                 f"🎉 Evento de **{c['noivos']}** criado com sucesso!\n\n"
                 f"Envie o seguinte link de acesso aos noivos:\n"
@@ -857,26 +417,24 @@ with st.sidebar:
                 st.session_state.novo_ev_cred = None
                 st.rerun()
 
-        # ── Excluir evento ─────────────────────────────────────────────────
-        if len(dados["eventos"]) > 1:
+        if len(st.session_state.dados["eventos"]) > 1:
             with st.expander("🗑️ Excluir Evento"):
                 ev_del = st.selectbox(
                     "Evento para excluir",
                     lista_ev,
-                    format_func=lambda x: dados["eventos"][x]["noivos"],
+                    format_func=lambda x: st.session_state.dados["eventos"][x]["noivos"],
                     key="sb_del",
                 )
                 confirm_del = st.checkbox("Confirmo a exclusão permanente", key="ck_del")
                 if st.button("Excluir", key="btn_del"):
                     if confirm_del:
-                        # Remove usuário associado
-                        dados["usuarios"] = {
-                            u: v for u, v in dados["usuarios"].items()
+                        st.session_state.dados["usuarios"] = {
+                            u: v for u, v in st.session_state.dados["usuarios"].items()
                             if not (v.get("tipo") == "cliente" and v.get("evento_id") == ev_del)
                         }
-                        del dados["eventos"][ev_del]
-                        salvar_dados(dados)
-                        novo_sel = list(dados["eventos"].keys())[0]
+                        del st.session_state.dados["eventos"][ev_del]
+                        shared.salvar_dados(st.session_state.dados)
+                        novo_sel = list(st.session_state.dados["eventos"].keys())[0]
                         st.session_state.sel_ev = novo_sel
                         st.session_state.evento_id = novo_sel
                         st.rerun()
@@ -884,8 +442,7 @@ with st.sidebar:
                         st.warning("Marque a confirmação.")
 
     else:
-        # Perfil cliente: exibe info do evento
-        ev_cli = get_ev(dados, st.session_state.evento_id)
+        ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
         st.markdown(f"**{ev_cli['noivos']}**")
         st.markdown(f"📅 {ev_cli['data']}")
 
@@ -897,642 +454,20 @@ with st.sidebar:
         st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# EVENTO ATIVO
+# NAVEGAÇÃO MULTIPÁGINAS NATIVA
 # ═══════════════════════════════════════════════════════════════════════════════
-evento_atual = get_ev(dados, st.session_state.evento_id)
+pag_dashboard = st.Page("paginas/dashboard.py", title="Dashboard", icon=":material/bar_chart:")
+pag_briefing = st.Page("paginas/briefing.py", title="Briefing", icon=":material/description:")
+pag_cerimonial = st.Page("paginas/checklist_cerimonial.py", title="Checklist Cerimonial", icon=":material/rule:")
+pag_noivos = st.Page("paginas/checklist_noivos.py", title="Checklist Noivos", icon=":material/favorite:")
+pag_fornecedores = st.Page("paginas/fornecedores.py", title="Fornecedores", icon=":material/store:")
+pag_roteiro = st.Page("paginas/roteiro.py", title="Roteiro", icon=":material/schedule:")
 
-# ═══════════════════════════════════════════════════════════════════════════════
+lista_paginas = [pag_dashboard, pag_briefing]
 
+if is_admin:
+    lista_paginas.append(pag_cerimonial)
 
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB 0 — DASHBOARD
-# ───────────────────────────────────────────────────────────────────────────────
-if aba_selecionada == "Dashboard":
-    st.markdown(f"### Dashboard — {evento_atual['noivos']}  ·  📅 {evento_atual['data']}")
+lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
-    # ⏳ Contagem Regressiva
-    from datetime import datetime
-    try:
-        data_val = str(evento_atual["data"]) if pd.notna(evento_atual["data"]) else ""
-        data_evento_str = data_val.strip()
-        data_evento = datetime.strptime(data_evento_str, "%d/%m/%Y")
-        hoje = datetime.now()
-        delta = data_evento - hoje
-        dias = delta.days + 1
-        
-        if dias > 0:
-            st.info(f"💍 **Faltam {dias} dias para o grande dia! ({evento_atual['data']})**")
-        elif dias == 0:
-            st.success(f"🎉 **É hoje! O grande dia chegou! 💍**")
-        else:
-            st.success(f"✨ **O casamento aconteceu em {evento_atual['data']}! 🎉**")
-    except Exception:
-        st.warning(f"📅 Data do evento cadastrada: **{evento_atual['data']}** (insira no formato DD/MM/AAAA para habilitar contagem)")
-
-    df_f  = pd.DataFrame(evento_atual["fornecedores"])
-    total = len(df_f)
-
-    contratados = int((df_f["STATUS"] == "CONTRATADO").sum())
-    nao_havera  = int((df_f["STATUS"] == "Não haverá").sum())
-    em_negoc    = int(df_f["STATUS"].isin([
-        "Dados enviados", "Contrato recebido",
-        "Análise concluída / liberado para assinatura",
-        "Aguardando assinatura do CONTRATADO",
-    ]).sum())
-    orcando     = int((df_f["STATUS"] == "Orçando").sum())
-    ativos      = total - nao_havera
-
-    # Métricas Financeiras
-    total_orcado = float(df_f["VALOR CONTRATO"].sum())
-    pago_contratado = float(df_f[df_f["STATUS"] == "CONTRATADO"]["VALOR CONTRATO"].sum())
-    valor_negociacao = float(df_f[df_f["STATUS"].isin([
-        "Dados enviados", "Contrato recebido",
-        "Análise concluída / liberado para assinatura",
-        "Aguardando assinatura do CONTRATADO",
-    ])]["VALOR CONTRATO"].sum())
-
-    st.markdown("#### 💰 Painel Financeiro & Contratações")
-    c_fin1, c_fin2, c_fin3, c_fin4 = st.columns(4)
-    c_fin1.metric("Orçamento Total (Preenchido)", f"R$ {total_orcado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    c_fin2.metric("✅ Total Contratado (Fechado)", f"R$ {pago_contratado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    c_fin3.metric("🔄 Em Negociação", f"R$ {valor_negociacao:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    c_fin4.metric("📊 Setores Ativos", f"{contratados} de {ativos}")
-
-    # Progresso Geral
-    st.write("")
-    pct_geral = contratados / ativos if ativos > 0 else 0
-    st.markdown(f"**Progresso de contratação:** {contratados} de {ativos} setores ativos  **({pct_geral:.0%})**")
-    st.progress(pct_geral)
-
-    # Gráficos
-    st.write("")
-    cg1, cg2 = st.columns(2)
-    with cg1:
-        st.markdown("##### 📊 Quantidade por Status")
-        df_status_counts = df_f["STATUS"].value_counts().reset_index()
-        df_status_counts.columns = ["Status", "Quantidade"]
-        st.bar_chart(df_status_counts.set_index("Status"), height=250)
-        
-    with cg2:
-        st.markdown("##### 💸 Maiores Contratos (R$)")
-        df_money = df_f[df_f["VALOR CONTRATO"] > 0][["SETOR", "VALOR CONTRATO"]].sort_values(by="VALOR CONTRATO", ascending=False).head(8)
-        if not df_money.empty:
-            st.bar_chart(df_money.set_index("SETOR"), height=250)
-        else:
-            st.info("Preencha a coluna 'Valor Contrato' na aba Fornecedores para ver a distribuição financeira.")
-
-    # Status por etapa (barras de progresso)
-    st.write("")
-    with st.expander("🔍 Ver Acompanhamento Detalhado por Etapa"):
-        for opt in STATUS_OPCOES:
-            qtd  = int((df_f["STATUS"] == opt).sum())
-            pct_s = (qtd / total * 100) if total > 0 else 0
-            cor  = STATUS_CORES[opt]
-            st.markdown(f"""
-            <div style='margin-bottom:10px;'>
-                <div style='display:flex; justify-content:space-between; margin-bottom:3px;'>
-                    <small style='font-weight:600;'>{opt}</small>
-                    <small style='opacity:0.6;'>{qtd} setor(es)</small>
-                </div>
-                <div style='background:rgba(100,116,139,0.2); height:10px; border-radius:5px; overflow:hidden;'>
-                    <div style='background:{cor}; width:{pct_s:.1f}%; height:100%; transition:width .3s;'></div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # Lista de urgências
-    df_urgente = df_f[df_f["STATUS"] == "Orçando"]
-    if not df_urgente.empty:
-        st.write("")
-        st.markdown(f"#### ⚠️ Atenção — {len(df_urgente)} setor(es) ainda sem fornecedor definido")
-        for _, row in df_urgente.iterrows():
-            emp_val = str(row["EMPRESA"]) if pd.notna(row["EMPRESA"]) and row["EMPRESA"] is not None else ""
-            emp = emp_val.strip() if emp_val.strip() else "Empresa não definida"
-            st.markdown(
-                f"<div class='alert-row'>🔴 <b>{row['SETOR']}</b> — {emp}</div>",
-                unsafe_allow_html=True,
-            )
-
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB — BRIEFING INICIAL
-# ───────────────────────────────────────────────────────────────────────────────
-if aba_selecionada == "Briefing":
-    st.markdown(f"### Briefing Inicial — {evento_atual['noivos']}")
-    briefing = get_briefing(evento_atual)
-
-    if is_admin or st.session_state.tipo_usuario == "cliente":
-        st.text_area(
-            "Estilo do evento / referências visuais",
-            value=briefing["estilo"],
-            placeholder="Ex: Rústico chic, paleta verde e terracota, ao ar livre…",
-            height=80,
-            key=f"bf_estilo_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "estilo", f"bf_estilo_{st.session_state.evento_id}")
-        )
-        st.text_input(
-            "Número estimado de convidados",
-            value=briefing["convidados"],
-            key=f"bf_convidados_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "convidados", f"bf_convidados_{st.session_state.evento_id}")
-        )
-        st.text_input(
-            "Paleta de cores principal",
-            value=briefing["cores"],
-            placeholder="Ex: Branco, verde esmeralda e dourado",
-            key=f"bf_cores_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "cores", f"bf_cores_{st.session_state.evento_id}")
-        )
-        st.text_area(
-            "Restrições alimentares / observações do buffet",
-            value=briefing["alimentar"],
-            placeholder="Ex: 3 vegetarianos, 1 celíaco, sem glúten na mesa 5…",
-            height=70,
-            key=f"bf_alimentar_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "alimentar", f"bf_alimentar_{st.session_state.evento_id}")
-        )
-        st.text_area(
-            "Preferências musicais",
-            value=briefing["musica"],
-            placeholder="Ex: MPB e sertanejo raiz; evitar funk e pagode…",
-            height=70,
-            key=f"bf_musica_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "musica", f"bf_musica_{st.session_state.evento_id}")
-        )
-        st.text_area(
-            "Observações gerais",
-            value=briefing["obs"],
-            height=90,
-            key=f"bf_obs_{st.session_state.evento_id}",
-            on_change=update_briefing_field,
-            args=(st.session_state.evento_id, "obs", f"bf_obs_{st.session_state.evento_id}")
-        )
-        st.caption("✨ As alterações no briefing são salvas automaticamente.")
-    else:
-        st.info("🔒 Briefing registrado pelo cerimonial.")
-        bf_field("Estilo do evento",         briefing["estilo"])
-        bf_field("Convidados estimados",      briefing["convidados"])
-        bf_field("Paleta de cores",           briefing["cores"])
-        bf_field("Restrições alimentares",    briefing["alimentar"])
-        bf_field("Preferências musicais",     briefing["musica"])
-        bf_field("Observações gerais",        briefing["obs"])
-
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB 1 — FORNECEDORES
-# ───────────────────────────────────────────────────────────────────────────────
-if aba_selecionada == "Fornecedores":
-    st.markdown(f"### Alinhamento com Fornecedores — {evento_atual['noivos']}")
-
-    # Filtros
-    cf1, cf2 = st.columns(2)
-    with cf1:
-        filtro = st.selectbox(
-            "Filtrar por status", ["Todos"] + STATUS_OPCOES, key="filt_status"
-        )
-    with cf2:
-        busca = st.text_input("Buscar setor / empresa", placeholder="Digite…", key="busca_forn")
-
-    # Monta DataFrame completo
-    df_full = pd.DataFrame(evento_atual["fornecedores"])
-    df_view = df_full.copy()
-
-    if filtro != "Todos":
-        df_view = df_view[df_view["STATUS"] == filtro]
-    if busca:
-        df_view = df_view[
-            df_view["SETOR"].str.contains(busca, case=False, na=False) |
-            df_view["EMPRESA"].str.contains(busca, case=False, na=False)
-        ]
-
-    # ── Mapeamento de cores por status ────────────────────────────────────────
-    STATUS_CORES = {
-        "Orçando":                                     {"bg": "#FEE2E2", "text": "#991B1B", "border": "#FECACA",  "emoji": "🔴"},
-        "Dados enviados":                               {"bg": "#DBEAFE", "text": "#1E40AF", "border": "#BFDBFE",  "emoji": "🔵"},
-        "Contrato recebido":                            {"bg": "#FEF3C7", "text": "#92400E", "border": "#FDE68A",  "emoji": "🟡"},
-        "Análise concluída / liberado para assinatura": {"bg": "#F3E8FF", "text": "#6B21A8", "border": "#E9D5FF",  "emoji": "🟣"},
-        "Aguardando assinatura do CONTRATADO":          {"bg": "#ECFEFF", "text": "#155E75", "border": "#A5F3FC",  "emoji": "🩵"},
-        "CONTRATADO":                                   {"bg": "#D1FAE5", "text": "#065F46", "border": "#6EE7B7",  "emoji": "🟢"},
-        "Não haverá":                                   {"bg": "#F1F5F9", "text": "#475569", "border": "#CBD5E1",  "emoji": "⚪"},
-    }
-
-    # ── Legenda de cores ───────────────────────────────────────────────────────
-    badges_html = " ".join([
-        f'<span style="background:{c["bg"]};color:{c["text"]};border:1px solid {c["border"]};'
-        f'border-radius:6px;padding:2px 9px;font-size:11px;font-weight:500;white-space:nowrap;">'
-        f'{c["emoji"]} {s}</span>'
-        for s, c in STATUS_CORES.items()
-    ])
-    st.markdown(
-        f'<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;">'
-        f'<span style="font-size:12px;font-weight:600;color:#64748B;margin-right:2px;">Legenda:</span>'
-        f'{badges_html}</div>',
-        unsafe_allow_html=True,
-    )
-
-    # ── Cards de fornecedores ──────────────────────────────────────────────────
-    can_edit = is_admin or st.session_state.tipo_usuario == "cliente"
-    fornecedores_dict = {f["SETOR"]: f for f in evento_atual["fornecedores"]}
-
-    for forn in df_view.to_dict("records"):
-        setor   = forn["SETOR"]
-        status  = forn.get("STATUS") or "Orçando"
-        cor     = STATUS_CORES.get(status, {"bg": "#F8FAFC", "text": "#334155", "border": "#CBD5E1", "emoji": "❔"})
-        empresa = forn.get("EMPRESA", "") or ""
-        resp    = forn.get("RESPONSÁVEL", "") or ""
-        tel     = forn.get("CEL/TEL", "") or ""
-        insta   = forn.get("INSTAGRAM", "") or ""
-
-        # Format values for display
-        try:
-            val_fmt = f"R$ {float(forn.get('VALOR CONTRATO', 0) or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        except Exception:
-            val_fmt = "R$ 0,00"
-        try:
-            he_fmt = f"R$ {float(forn.get('HORA EXTRA', 0) or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        except Exception:
-            he_fmt = "R$ 0,00"
-
-        # Expandable header label
-        label = f"{cor['emoji']} {setor}" + (f" — {empresa}" if empresa else " — (Pendente)")
-        with st.expander(label, expanded=False):
-            # Badge status display
-            st.markdown(
-                f'<div style="background:{cor["bg"]};border:1px solid {cor["border"]};'
-                f'border-radius:8px;padding:6px 12px;margin-bottom:12px;display:inline-block;">'
-                f'<span style="color:{cor["text"]};font-size:12px;font-weight:600;">'
-                f'{cor["emoji"]} {status}</span></div>',
-                unsafe_allow_html=True,
-            )
-
-            if can_edit:
-                with st.form(key=f"form_forn_{setor}_{st.session_state.evento_id}"):
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        nova_empresa = st.text_input("🏢 Empresa",     value=empresa, key=f"emp_{setor}")
-                        novo_resp    = st.text_input("👤 Responsável", value=resp,    key=f"resp_{setor}")
-                        novo_tel     = st.text_input("📞 Cel/Tel",     value=tel,     key=f"tel_{setor}")
-                        novo_insta   = st.text_input("📸 Instagram",   value=insta,   key=f"ig_{setor}")
-                    with c2:
-                        novo_status = st.selectbox(
-                            "📌 Status", STATUS_OPCOES,
-                            index=STATUS_OPCOES.index(status) if status in STATUS_OPCOES else 0,
-                            key=f"st_{setor}"
-                        )
-                        try:
-                            val_atual = float(forn.get("VALOR CONTRATO", 0) or 0)
-                        except (ValueError, TypeError):
-                            val_atual = 0.0
-                        novo_val = st.number_input(
-                            "💰 Valor Contrato (R$)", min_value=0.0, value=val_atual,
-                            format="%.2f", step=100.0, key=f"val_{setor}"
-                        )
-                        try:
-                            he_atual = float(forn.get("HORA EXTRA", 0) or 0)
-                        except (ValueError, TypeError):
-                            he_atual = 0.0
-                        nova_he = st.number_input(
-                            "⏱️ Hora Extra (R$)", min_value=0.0, value=he_atual,
-                            format="%.2f", step=50.0, key=f"he_{setor}"
-                        )
-                        nova_obs = st.text_area(
-                            "📝 Observação",
-                            value=forn.get("OBSERVAÇÃO", "") or "",
-                            height=80, key=f"obs_{setor}"
-                        )
-                    if st.form_submit_button("💾 Salvar", type="primary", use_container_width=True):
-                        item = fornecedores_dict.get(setor, {})
-                        item["EMPRESA"]        = nova_empresa.strip()
-                        item["RESPONSÁVEL"]    = novo_resp.strip()
-                        item["CEL/TEL"]        = novo_tel.strip()
-                        item["INSTAGRAM"]      = novo_insta.strip()
-                        item["STATUS"]         = novo_status
-                        item["VALOR CONTRATO"] = float(novo_val)
-                        item["HORA EXTRA"]     = float(nova_he)
-                        item["OBSERVAÇÃO"]     = nova_obs.strip()
-                        salvar_dados(dados)
-                        st.toast(f"Fornecedor '{setor}' salvo!", icon="💾")
-                        st.rerun()
-            else:
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"**🏢 Empresa:** {empresa or '—'}")
-                    st.markdown(f"**👤 Responsável:** {resp or '—'}")
-                    st.markdown(f"**📞 Cel/Tel:** {tel or '—'}")
-                    st.markdown(f"**📸 Instagram:** {insta or '—'}")
-                with c2:
-                    st.markdown(f"**💰 Valor Contrato:** {val_fmt}")
-                    st.markdown(f"**⏱️ Hora Extra:** {he_fmt}")
-                    obs = forn.get("OBSERVAÇÃO", "") or ""
-                    if obs:
-                        st.markdown(f"**📝 Observação:** {obs}")
-
-    # Export button
-    st.write("")
-    cb1, _ = st.columns([2.5, 9.5])
-    with cb1:
-        excel_bytes = exportar_excel(evento_atual)
-        st.download_button(
-            "📥 Exportar Excel",
-            data=excel_bytes,
-            file_name=f"AT_{evento_atual['noivos'].replace(' ', '_').replace('&','e')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="dl_forn",
-        )
-
-    if is_admin:
-        # Add/Remove Sectors Expanders
-        with st.expander("➕ / 🗑️ Adicionar ou Excluir Linhas (Setores)"):
-            st.markdown("<small>Adicione novos setores ou exclua setores existentes da sua lista de fornecedores.</small>", unsafe_allow_html=True)
-            
-            c_add, c_del = st.columns(2)
-            with c_add:
-                st.markdown("**Adicionar Setor**")
-                nome_novo_setor = st.text_input("Nome do Setor", placeholder="Ex: Banda Extra, Barman...", key="add_setor_name")
-                if st.button("➕ Adicionar Setor", key="btn_add_setor"):
-                    if nome_novo_setor.strip():
-                        setores_existentes = [f["SETOR"].strip().lower() for f in evento_atual["fornecedores"]]
-                        if nome_novo_setor.strip().lower() in setores_existentes:
-                            st.error("Este setor já existe.")
-                        else:
-                            novo_forn = {
-                                "SETOR": nome_novo_setor.strip(),
-                                "EMPRESA": "",
-                                "RESPONSÁVEL": "",
-                                "CEL/TEL": "",
-                                "VALOR CONTRATO": 0.0,
-                                "HORA EXTRA": 0.0,
-                                "INSTAGRAM": "",
-                                "OBSERVAÇÃO": "",
-                                "STATUS": "Orçando"
-                            }
-                            evento_atual["fornecedores"].append(novo_forn)
-                            salvar_dados(dados)
-                            st.toast(f"Setor '{nome_novo_setor}' adicionado com sucesso!", icon="🎉")
-                            st.rerun()
-                    else:
-                        st.warning("Digite o nome do setor.")
-            
-            with c_del:
-                st.markdown("**Excluir Setor**")
-                setores_lista = [f["SETOR"] for f in evento_atual["fornecedores"]]
-                setor_para_excluir = st.selectbox("Selecione o Setor para Excluir", setores_lista, key="del_setor_name")
-                if st.button("🗑️ Excluir Setor Selecionado", key="btn_del_setor"):
-                    evento_atual["fornecedores"] = [f for f in evento_atual["fornecedores"] if f["SETOR"] != setor_para_excluir]
-                    salvar_dados(dados)
-                    st.toast(f"Setor '{setor_para_excluir}' excluído!", icon="🗑️")
-                    st.rerun()
-
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB 2 — CHECKLIST MÊS A MÊS
-# ───────────────────────────────────────────────────────────────────────────────
-if is_admin and aba_selecionada == "Checklist Cerimonial":
-    if True:
-        st.markdown(f"### Checklist Cerimonial — {evento_atual['noivos']}")
-        
-        if is_admin:
-            sub_checklist_cerim = st.radio("Seção", ["📊 Acompanhar Checklist", "⚙️ Gerenciar Tarefas"], horizontal=True, label_visibility="collapsed", key="sub_ck_cerim")
-        else:
-            sub_checklist_cerim = "📊 Acompanhar Checklist"
-            
-        checklist_cerim_items = get_checklist_cerimonial(evento_atual)
-
-        if sub_checklist_cerim == "📊 Acompanhar Checklist":
-            grupos = {}
-            for item in checklist_cerim_items:
-                grupos.setdefault(item["grupo"], []).append(item)
-
-            states = {}
-            for grupo, itens in grupos.items():
-                feitos_g = sum(1 for i in itens if i["feito"])
-                all_done = feitos_g == len(itens)
-                label    = f"{'✅' if all_done else '🗓️'}  {grupo}  —  {feitos_g}/{len(itens)} concluídos"
-
-                with st.expander(label, expanded=not all_done):
-                    for item in itens:
-                        val = item["feito"]
-                        if is_admin or st.session_state.tipo_usuario == "cliente":
-                            key_name = f"ck_cerim_{st.session_state.evento_id}_{item['id']}"
-                            states[item["id"]] = st.checkbox(
-                                item["tarefa"],
-                                value=val,
-                                key=key_name,
-                                on_change=toggle_checklist_item,
-                                args=(st.session_state.evento_id, item["id"], key_name, "cerimonial")
-                            )
-                        else:
-                            states[item["id"]] = val
-                            icone = "✅" if val else "⬜"
-                            st.markdown(f"{icone} &nbsp; {item['tarefa']}")
-
-            total_ck  = len(checklist_cerim_items)
-            feitos_ck = sum(1 for i in checklist_cerim_items if i["feito"])
-            st.write("")
-            st.progress(feitos_ck / total_ck if total_ck else 0)
-            st.markdown(f"**{feitos_ck} de {total_ck} tarefas concluídas**")
-
-            if is_admin or st.session_state.tipo_usuario == "cliente":
-                st.caption("✨ As alterações no checklist são salvas automaticamente.")
-                    
-        else:
-            st.markdown("#### ⚙️ Gerenciar Tarefas")
-            st.markdown("Adicione novas tarefas, exclua ou altere as categorias do checklist cerimonial.")
-            
-            df_ck_tasks = pd.DataFrame(checklist_cerim_items)
-            if df_ck_tasks.empty:
-                df_ck_tasks = pd.DataFrame(columns=["id", "grupo", "tarefa", "feito"])
-                
-            df_ck_edit = st.data_editor(
-                df_ck_tasks,
-                column_config={
-                    "grupo": st.column_config.SelectboxColumn(
-                        "Grupo / Período",
-                        options=[
-                            "12 meses antes", "9 meses antes", "6 meses antes",
-                            "3 meses antes", "2 meses antes", "1 mês antes",
-                            "1 semana antes", "No dia", "Pós-evento"
-                        ],
-                        required=True,
-                        width="medium"
-                    ),
-                    "tarefa": st.column_config.TextColumn("Tarefa / Descrição", required=True, width="large"),
-                    "feito": st.column_config.CheckboxColumn("Concluído", width="small")
-                },
-                column_order=["grupo", "tarefa", "feito"],
-                hide_index=True,
-                use_container_width=True,
-                num_rows="dynamic",
-                key="df_ck_cerim_editor"
-            )
-            
-            if not df_ck_edit.equals(df_ck_tasks):
-                new_tasks = []
-                for i, row in df_ck_edit.iterrows():
-                    row_dict = row.to_dict()
-                    if not row_dict.get("id") or pd.isna(row_dict.get("id")) or str(row_dict.get("id")).strip() == "":
-                        row_dict["id"] = "cc_" + "".join(random.choices(string.digits, k=6))
-                    if pd.isna(row_dict.get("tarefa")):
-                        row_dict["tarefa"] = ""
-                    if "feito" not in row_dict or pd.isna(row_dict["feito"]) or row_dict["feito"] is None:
-                        row_dict["feito"] = False
-                    else:
-                        row_dict["feito"] = bool(row_dict["feito"])
-                    new_tasks.append(row_dict)
-                    
-                evento_atual["checklist_cerimonial"] = new_tasks
-                salvar_dados(dados)
-                st.toast("Checklist Cerimonial atualizado!", icon="⚙️")
-                st.rerun()
-                
-            st.caption("✨ As alterações nas tarefas são salvas automaticamente.")
-
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB — CHECKLIST NOIVOS
-# ───────────────────────────────────────────────────────────────────────────────
-if aba_selecionada == "Checklist Noivos":
-    st.markdown(f"### Checklist Noivos — {evento_atual['noivos']}")
-    
-    if is_admin:
-        sub_checklist_noivos = st.radio("Seção", ["📊 Acompanhar Checklist", "⚙️ Gerenciar Tarefas"], horizontal=True, label_visibility="collapsed", key="sub_ck_noivos")
-    else:
-        sub_checklist_noivos = "📊 Acompanhar Checklist"
-        
-    checklist_noivos_items = get_checklist_noivos(evento_atual)
-
-    if sub_checklist_noivos == "📊 Acompanhar Checklist":
-        grupos = {}
-        for item in checklist_noivos_items:
-            grupos.setdefault(item["grupo"], []).append(item)
-
-        states = {}
-        for grupo, itens in grupos.items():
-            feitos_g = sum(1 for i in itens if i["feito"])
-            all_done = feitos_g == len(itens)
-            label    = f"{'✅' if all_done else '🗓️'}  {grupo}  —  {feitos_g}/{len(itens)} concluídos"
-
-            with st.expander(label, expanded=not all_done):
-                for item in itens:
-                    val = item["feito"]
-                    if is_admin or st.session_state.tipo_usuario == "cliente":
-                        key_name = f"ck_noivos_{st.session_state.evento_id}_{item['id']}"
-                        states[item["id"]] = st.checkbox(
-                            item["tarefa"],
-                            value=val,
-                            key=key_name,
-                            on_change=toggle_checklist_item,
-                            args=(st.session_state.evento_id, item["id"], key_name, "noivos")
-                        )
-                    else:
-                        states[item["id"]] = val
-                        icone = "✅" if val else "⬜"
-                        st.markdown(f"{icone} &nbsp; {item['tarefa']}")
-
-        total_ck  = len(checklist_noivos_items)
-        feitos_ck = sum(1 for i in checklist_noivos_items if i["feito"])
-        st.write("")
-        st.progress(feitos_ck / total_ck if total_ck else 0)
-        st.markdown(f"**{feitos_ck} de {total_ck} tarefas concluídas**")
-
-        if is_admin or st.session_state.tipo_usuario == "cliente":
-            st.caption("✨ As alterações no checklist são salvas automaticamente.")
-                
-    else:
-        st.markdown("#### ⚙️ Gerenciar Tarefas")
-        st.markdown("Adicione novas tarefas, exclua ou altere as categorias do checklist dos noivos.")
-        
-        df_ck_tasks = pd.DataFrame(checklist_noivos_items)
-        if df_ck_tasks.empty:
-            df_ck_tasks = pd.DataFrame(columns=["id", "grupo", "tarefa", "feito"])
-            
-        df_ck_edit = st.data_editor(
-            df_ck_tasks,
-            column_config={
-                "grupo": st.column_config.SelectboxColumn(
-                    "Grupo / Período",
-                    options=[
-                        "12 meses antes", "9 meses antes", "6 meses antes",
-                        "3 meses antes", "2 meses antes", "1 mês antes",
-                        "1 semana antes", "No dia", "Pós-evento"
-                    ],
-                    required=True,
-                    width="medium"
-                ),
-                "tarefa": st.column_config.TextColumn("Tarefa / Descrição", required=True, width="large"),
-                "feito": st.column_config.CheckboxColumn("Concluído", width="small")
-            },
-            column_order=["grupo", "tarefa", "feito"],
-            hide_index=True,
-            use_container_width=True,
-            num_rows="dynamic",
-            key="df_ck_noivos_editor"
-        )
-        
-        if not df_ck_edit.equals(df_ck_tasks):
-            new_tasks = []
-            for i, row in df_ck_edit.iterrows():
-                row_dict = row.to_dict()
-                if not row_dict.get("id") or pd.isna(row_dict.get("id")) or str(row_dict.get("id")).strip() == "":
-                    row_dict["id"] = "cn_" + "".join(random.choices(string.digits, k=6))
-                if pd.isna(row_dict.get("tarefa")):
-                    row_dict["tarefa"] = ""
-                if "feito" not in row_dict or pd.isna(row_dict["feito"]) or row_dict["feito"] is None:
-                    row_dict["feito"] = False
-                else:
-                    row_dict["feito"] = bool(row_dict["feito"])
-                new_tasks.append(row_dict)
-                
-            evento_atual["checklist_noivos"] = new_tasks
-            salvar_dados(dados)
-            st.toast("Checklist Noivos atualizado!", icon="⚙️")
-            st.rerun()
-            
-        st.caption("✨ As alterações nas tarefas são salvas automaticamente.")
-
-# ───────────────────────────────────────────────────────────────────────────────
-# TAB 4 — ROTEIRO E CRONOGRAMA
-# ───────────────────────────────────────────────────────────────────────────────
-if aba_selecionada == "Roteiro":
-    st.markdown(f"### Roteiro do Evento — {evento_atual['noivos']}")
-    roteiro = evento_atual.get("roteiro", [r.copy() for r in ROTEIRO_PADRAO])
-    df_rot  = pd.DataFrame(roteiro)
-
-    rot_cfg = {
-        "HORÁRIO":     st.column_config.TextColumn("Horário",     width="small"),
-        "MOMENTO":     st.column_config.TextColumn("Momento",     width="large"),
-        "RESPONSÁVEL": st.column_config.TextColumn("Responsável", width="medium"),
-        "LOCAL":       st.column_config.TextColumn("Local",       width="medium"),
-        "OBSERVAÇÃO":  st.column_config.TextColumn("Observação",  width="large"),
-    }
-
-    if is_admin:
-        df_rot_edit = st.data_editor(
-            df_rot,
-            column_config=rot_cfg,
-            hide_index=True,
-            use_container_width=True,
-            num_rows="dynamic",
-            key=f"ed_rot_{st.session_state.evento_id}",
-        )
-
-        if not df_rot_edit.equals(df_rot):
-            evento_atual["roteiro"] = df_rot_edit.to_dict(orient="records")
-            salvar_dados(dados)
-            st.toast("Roteiro salvo!", icon="⏱️")
-            st.rerun()
-
-        cr1, _ = st.columns([2.5, 9.5])
-        with cr1:
-            excel_rot = exportar_excel(evento_atual)
-            st.download_button(
-                "📥 Exportar Excel",
-                data=excel_rot,
-                file_name=f"AT_{evento_atual['noivos'].replace(' ', '_').replace('&','e')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="dl_rot",
-            )
-        st.caption("✨ As alterações no roteiro são salvas automaticamente.")
-    else:
-        st.dataframe(df_rot, column_config=rot_cfg, hide_index=True, use_container_width=True)
+st.navigation(lista_paginas)
