@@ -139,17 +139,20 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #0F172A !important;
 }
 
-/* Altera o container da sidebar para o modo Flexbox invertido */
-[data-testid="stSidebarUserContent"] {
+/* Mira no container principal do conteúdo da barra lateral */
+section[data-testid="stSidebar"] > div div[class*="stSidebarUserContent"] {
     display: flex !important;
     flex-direction: column !important;
 }
-/* Joga a lista de páginas do st.navigation para baixo */
-[data-testid="stSidebarNavItems"] {
+
+/* Força os botões do st.navigation a irem para baixo (Ordem 2) */
+section[data-testid="stSidebar"] nav[data-testid="stSidebarNav"] {
     order: 2 !important;
+    margin-top: 20px !important;
 }
-/* Joga todo o resto do seu código (Título, Perfil, Selectbox) para cima */
-[data-testid="stVerticalBlock"] {
+
+/* Força o seu cabeçalho, perfil e selectbox a subirem (Ordem 1) */
+section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] {
     order: 1 !important;
 }
 
