@@ -342,6 +342,9 @@ if not st.session_state.logado:
         text-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     </style>
+    """, unsafe_allow_html=True)
+
+    st.html("""
     <script>
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('logout') === '1') {
@@ -359,7 +362,7 @@ if not st.session_state.logado:
         }
     }
     </script>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_javascript=True)
 
     _, col, _ = st.columns([1, 1.1, 1])
     with col:
@@ -408,11 +411,11 @@ if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "c
     try:
         _ev_id = st.session_state.get("evento_id")
         _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
-        st.markdown(f"""
+        st.html(f"""
         <script>
         localStorage.setItem('at_ev_token', '{_token}');
         </script>
-        """, unsafe_allow_html=True)
+        """, unsafe_allow_javascript=True)
     except Exception:
         pass
 
