@@ -130,7 +130,7 @@ components.html("""
             // Reduz o padding do block-container principal
             const blockContainer = doc.querySelector('.block-container');
             if (blockContainer) {
-                blockContainer.style.setProperty('padding-top', '1rem', 'important');
+                blockContainer.style.setProperty('padding-top', '0.5rem', 'important');
                 blockContainer.style.setProperty('margin-top', '0px', 'important');
             }
             
@@ -174,7 +174,7 @@ st.markdown("""
 [data-testid="stAppViewBlockContainer"] > div > div,
 [data-testid="stMainBlockContainer"],
 div.block-container {
-    padding-top: 1rem !important;
+    padding-top: 0.5rem !important;
     margin-top: 0 !important;
 }
 
