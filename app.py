@@ -120,6 +120,45 @@ components.html("""
     ocultarBadgesCC();
     const observerBadges = new MutationObserver(ocultarBadgesCC);
     observerBadges.observe(window.parent.document.body, { childList: true, subtree: true });
+
+    // CORREÇÃO DO ESPAÇO EM BRANCO NO TOPO (funciona em modo embed e normal)
+    // Usa inline styles que têm prioridade máxima sobre qualquer CSS
+    const fixarEspacoTopo = () => {
+        try {
+            const doc = window.parent.document;
+            
+            // Reduz o padding do block-container principal
+            const blockContainer = doc.querySelector('.block-container');
+            if (blockContainer) {
+                blockContainer.style.setProperty('padding-top', '1rem', 'important');
+                blockContainer.style.setProperty('margin-top', '0px', 'important');
+            }
+            
+            // Zera padding do wrapper stAppViewBlockContainer
+            const appViewBlockContainer = doc.querySelector('[data-testid="stAppViewBlockContainer"]');
+            if (appViewBlockContainer) {
+                appViewBlockContainer.style.setProperty('padding-top', '0px', 'important');
+                appViewBlockContainer.style.setProperty('margin-top', '0px', 'important');
+            }
+            
+            // Zera padding do stMain (presente no modo embed)
+            const stMain = doc.querySelector('[data-testid="stMain"]');
+            if (stMain) {
+                stMain.style.setProperty('padding-top', '0px', 'important');
+            }
+            
+            // Zera padding do stAppView
+            const stAppView = doc.querySelector('[data-testid="stAppView"]');
+            if (stAppView) {
+                stAppView.style.setProperty('padding-top', '0px', 'important');
+            }
+        } catch(e) {}
+    };
+    fixarEspacoTopo();
+    setTimeout(fixarEspacoTopo, 500);
+    setTimeout(fixarEspacoTopo, 1500);
+    const observerEspaco = new MutationObserver(fixarEspacoTopo);
+    observerEspaco.observe(window.parent.document.body, { childList: true, subtree: true });
 </script>
 """, height=0, width=0)
 
