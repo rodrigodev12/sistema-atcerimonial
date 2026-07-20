@@ -386,13 +386,6 @@ def get_evento_atual():
                     d.setTime(d.getTime() + (30*24*60*60*1000));
                     document.cookie = "at_ev_token={_token};expires=" + d.toUTCString() + ";path=/;SameSite=Lax;Secure";
                 }} catch(e) {{}}
-                
-                // Garante que o modo clean (embed=true) está ativo para remover menus e selos do Streamlit
-                if (!window.location.search.includes('embed=true')) {{
-                    const urlParams = new URLSearchParams(window.location.search);
-                    urlParams.set('embed', 'true');
-                    window.location.href = window.location.pathname + '?' + urlParams.toString();
-                }}
                 </script>
                 """, unsafe_allow_javascript=True)
             except Exception:
