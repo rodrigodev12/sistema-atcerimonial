@@ -495,6 +495,16 @@ if not st.session_state.logado:
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Remove embed=true da URL se estiver presente (limpeza do modo antigo)
+    if (urlParams.has('embed')) {
+        urlParams.delete('embed');
+        urlParams.delete('embed_options');
+        const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+        window.history.replaceState({}, document.title, newUrl);
+        window.location.href = newUrl;
+    }
+    
     if (urlParams.get('logout') === '1') {
         limparToken();
         const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
