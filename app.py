@@ -565,11 +565,12 @@ is_admin = st.session_state.tipo_usuario == "admin"
 evento_atual = shared.get_evento_atual()
 
 # Salva o token no localStorage e cookies para persistência de sessão nos noivos
+# Usa components.html(height=0) para não adicionar espaço visual na página do cliente
 if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "cliente":
     try:
         _ev_id = st.session_state.get("evento_id")
         _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
-        st.html(f"""
+        components.html(f"""
         <script>
         try {{
             localStorage.setItem('at_ev_token', '{_token}');
@@ -580,7 +581,7 @@ if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "c
             document.cookie = "at_ev_token={_token};expires=" + d.toUTCString() + ";path=/;SameSite=Lax;Secure";
         }} catch(e) {{}}
         </script>
-        """, unsafe_allow_javascript=True)
+        """, height=0, width=0)
     except Exception:
         pass
 

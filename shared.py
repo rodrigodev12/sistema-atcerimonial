@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import json
 import os
@@ -376,7 +377,7 @@ def get_evento_atual():
             try:
                 _ev_id = st.session_state.evento_id
                 _token = st.session_state.dados["eventos"][_ev_id]["link_token"]
-                st.html(f"""
+                components.html(f"""
                 <script>
                 try {{
                     localStorage.setItem('at_ev_token', '{_token}');
@@ -387,7 +388,7 @@ def get_evento_atual():
                     document.cookie = "at_ev_token={_token};expires=" + d.toUTCString() + ";path=/;SameSite=Lax;Secure";
                 }} catch(e) {{}}
                 </script>
-                """, unsafe_allow_javascript=True)
+                """, height=0, width=0)
             except Exception:
                 pass
         return get_ev(st.session_state.dados, st.session_state.evento_id)
