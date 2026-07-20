@@ -435,11 +435,13 @@ if not st.session_state.logado:
         background-attachment: fixed !important;
     }
     
-    /* Estilo do card de login com sombra elegante */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        background-color: rgba(255, 255, 255, 0.98) !important;
+    /* Estilo do card de login com sombra elegante e glassmorphism */
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    div[class*="stVerticalBlockBorderWrapper"],
+    form[data-testid="stForm"] {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
         border-radius: 12px !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35) !important;
     }
     
@@ -461,11 +463,7 @@ if not st.session_state.logado:
     }
     
     /* Ajusta a cor dos textos do formulário para o mesmo tom do subtítulo (branco com opacidade) */
-    div[data-testid="stVerticalBlockBorderWrapper"] h3,
-    div[data-testid="stVerticalBlockBorderWrapper"] h2,
-    div[data-testid="stVerticalBlockBorderWrapper"] label,
-    div[data-testid="stVerticalBlockBorderWrapper"] label p,
-    div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stWidgetLabel"] p {
+    h1, h2, h3, label, label p, [data-testid="stWidgetLabel"] p, .stSubheader p {
         color: rgba(255, 255, 255, 0.85) !important;
     }
     </style>
