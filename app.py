@@ -239,24 +239,38 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
 section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
     color: #0F172A !important;
-}/* 1. Alvo exato: O texto do primeiro elemento de cabeçalho do menu */
-[data-testid="stSidebarNav"] > ul > li:first-child div[data-anchored="true"],
+}/* 1. Alvo exato: O texto do primeiro elemento de cabeçalho do menu (Título Principal) */
+[data-testid="stSidebarNav"] div[data-anchored="true"],
+[data-testid="stSidebarNav"] span[data-anchored="true"],
 [data-testid="stSidebarNav"] div:first-child[data-anchored="true"] {
-    font-size: 22px !important;       /* Aumenta exclusivamente o título principal */
-    font-weight: bold !important;     /* Deixa em negrito */
-    color: #ffffff !important;        /* Cor branca */
-    padding-bottom: 15px !important;  /* Dá um pequeno espaço interno */
+    font-size: 24px !important;       /* Aumentado de 22px para 24px */
+    font-weight: 700 !important;      /* Negrito forte e destacado */
+    color: #ffffff !important;        /* Branco puro */
+    letter-spacing: 0.5px !important; /* Espaçamento premium */
+    padding-bottom: 12px !important;  /* Espaço interno acima da linha */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important; /* Divisor de seção elegante */
+    margin-bottom: 8px !important;
 }
 
 /* 2. Cria o espaçamento elegante separando o título das abas */
 [data-testid="stSidebarNavItems"] {
-    margin-top: 30px !important;      /* Afasta a lista de abas para baixo */
+    margin-top: 20px !important;      /* Afasta a lista de abas para baixo */
 }
 
-/* 3. Garante que os nomes das abas voltem e fiquem no tamanho padrão */
+/* Aumenta o tamanho e espaçamento dos botões/abas da navegação lateral */
+[data-testid="stSidebarNavItems"] li a {
+    padding-top: 10px !important;     /* Mais espaçoso verticalmente */
+    padding-bottom: 10px !important;  
+    margin-bottom: 6px !important;    /* Espaçamento elegante entre botões */
+    border-radius: 8px !important;    /* Cantos arredondados modernos */
+    transition: background-color 0.2s ease !important;
+}
+
+/* 3. Aumenta e destaca a fonte dos nomes das abas */
 [data-testid="stSidebarNavItems"] span {
-    font-size: 14px !important;       /* Protege o tamanho das abas */
-    font-weight: normal !important;   /* Tira o negrito delas */
+    font-size: 16px !important;       /* Fonte ampliada para melhor leitura (antes 14px) */
+    font-weight: 500 !important;       /* Texto médio/semi-bold */
+    color: rgba(255, 255, 255, 0.9) !important; /* Branco suave de alta visibilidade */
 }
 /* Força o botão do menu lateral no celular a ficar destacado e visível */
 button[data-testid="stSidebarCollapseButton"] {
