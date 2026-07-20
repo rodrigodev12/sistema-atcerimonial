@@ -459,6 +459,15 @@ if not st.session_state.logado:
         font-size: 14px;
         text-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
+    
+    /* Ajusta a cor dos textos do formulário para o mesmo tom do subtítulo (branco com opacidade) */
+    div[data-testid="stVerticalBlockBorderWrapper"] h3,
+    div[data-testid="stVerticalBlockBorderWrapper"] h2,
+    div[data-testid="stVerticalBlockBorderWrapper"] label,
+    div[data-testid="stVerticalBlockBorderWrapper"] label p,
+    div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stWidgetLabel"] p {
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -556,7 +565,7 @@ if not st.session_state.logado:
 
 
         st.markdown(
-            "<p style='text-align:center;font-size:11px;opacity:0.4;margin-top:14px;'>AT Cerimonial © 2026</p>",
+            "<p style='text-align:center;font-size:11px;color:rgba(255, 255, 255, 0.85);opacity:0.85;margin-top:14px;'>AT Cerimonial © 2026</p>",
             unsafe_allow_html=True,
         )
     st.stop()
