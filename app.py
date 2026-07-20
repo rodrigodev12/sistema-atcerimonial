@@ -129,14 +129,29 @@ st.markdown("""
 
 .stApp { background: #F1F5F9; font-family: 'Inter', sans-serif; }
 
-/* Remove o grande espaço em branco no topo gerado pelo Streamlit */
-/* Usando múltiplos seletores para garantir que um deles funcione */
+/* Remove o grande espaço em branco no topo gerado pelo Streamlit (modo normal e embed) */
 .block-container,
 [data-testid="stAppViewBlockContainer"] > div,
 [data-testid="stAppViewBlockContainer"] > div > div,
 [data-testid="stMainBlockContainer"],
 div.block-container {
     padding-top: 1rem !important;
+    margin-top: 0 !important;
+}
+
+/* Modo embed (painel dos clientes) — o header some mas o Streamlit deixa padding extra no stAppView */
+[data-testid="stAppView"],
+[data-testid="stMain"],
+[data-testid="stMainContent"],
+.stApp > .stMain,
+.stApp > [data-testid="stMain"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Garante que o stAppViewBlockContainer também não adicione espaço */
+[data-testid="stAppViewBlockContainer"] {
+    padding-top: 0 !important;
     margin-top: 0 !important;
 }
 
