@@ -1,6 +1,6 @@
 # 💍 AT Cerimonial — Painel de Casamentos
 
-Portal exclusivo para noivos e assessoria cerimonial acompanharem todos os detalhes do grande dia.
+Acompanhe seu casamento: gerenciamento de fornecedores, briefings, checklists e roteiros em um só lugar.
 
 Aqui você poderá:
 * 📊 Acompanhar o checklist completo de tarefas dos noivos e do cerimonial.
