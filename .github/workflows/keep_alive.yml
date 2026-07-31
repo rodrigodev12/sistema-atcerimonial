@@ -12,5 +12,5 @@ jobs:
     steps:
       - name: Ping Streamlit App
         run: |
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" https://sistema-atcerimonial.streamlit.app/)
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-redirs 5 -b /tmp/cookies.txt -c /tmp/cookies.txt -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" https://sistema-atcerimonial.streamlit.app/)
           echo "Ping enviado para https://sistema-atcerimonial.streamlit.app/ com status HTTP $STATUS_CODE em $(date)"
