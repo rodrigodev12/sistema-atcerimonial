@@ -2,15 +2,37 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    # Executa a cada 6 horas para manter a aplicação Streamlit ativa
+    # Executa a cada 6 horas para garantir que o Streamlit não durma
     - cron: '0 */6 * * *'
-  workflow_dispatch: # Permite execução manual pelo GitHub
+  workflow_dispatch: # Permite rodar manualmente a partir da aba Actions no GitHub
 
 jobs:
   keep_alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Streamlit App
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
         run: |
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-redirs 5 -b /tmp/cookies.txt -c /tmp/cookies.txt -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" https://sistema-atcerimonial.streamlit.app/)
-          echo "Ping enviado para https://sistema-atcerimonial.streamlit.app/ com status HTTP $STATUS_CODE em $(date)"
+          python -m pip install --upgrade pip
+          pip install playwright
+          playwright install chromium
+
+      - name: Run Keep Alive Script
+        run: python .github/workflows/keep_alive.py
+
+      - name: Upload Status Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamlit-status-screenshots
+          path: |
+            status_inicial.png
+            status_final.png
+          retention-days: 3
