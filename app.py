@@ -322,33 +322,50 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     color: #FFFFFF !important;
 }
 
-/* Estilo específico e elegante EXCLUSIVO para botões de ação (st.button) na Sidebar */
-section[data-testid="stSidebar"] div.stButton > button,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+/* Proteção estrita: garante que controles dentro do selectbox nunca herdem estilos de botão */
+section[data-testid="stSidebar"] [data-baseweb="select"] button,
+section[data-testid="stSidebar"] [data-testid="stSelectbox"] button {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    padding: 0 !important;
+    min-height: unset !important;
+}
+
+/* Estilo elegante para botões reais do Streamlit na Sidebar */
+section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"],
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"],
+section[data-testid="stSidebar"] [data-testid="stButton"] button,
+section[data-testid="stSidebar"] div.stButton button {
     background-color: #1E293B !important;
     background: #1E293B !important;
     color: #FFFFFF !important;
     border: 1px solid #334155 !important;
     border-radius: 8px !important;
     padding: 8px 12px !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
     width: 100% !important;
 }
 
-section[data-testid="stSidebar"] div.stButton > button:hover,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"]:hover,
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"]:hover,
+section[data-testid="stSidebar"] [data-testid="stButton"] button:hover,
+section[data-testid="stSidebar"] div.stButton button:hover {
     background-color: #334155 !important;
     background: #334155 !important;
     border-color: #475569 !important;
-    color: #FFFFFF !important;
 }
 
-section[data-testid="stSidebar"] div.stButton > button *,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button * {
+section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"] *,
+section[data-testid="stSidebar"] button[data-testid="stBaseButton-secondary"] *,
+section[data-testid="stSidebar"] [data-testid="stButton"] button *,
+section[data-testid="stSidebar"] div.stButton button * {
     color: #FFFFFF !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
 }
 
@@ -744,7 +761,7 @@ with st.sidebar:
         </script>
         """, height=55)
 
-        if st.button("🔄 Gerar Novo Link (Revogar Anterior)", key="btn_revogar_link", use_container_width=True, help="Cancela o link anterior e gera uma nova chave exclusiva para este casal"):
+        if st.button("🔄 Gerar Novo Link Seguro", key="btn_revogar_link", use_container_width=True, help="Cancela o link anterior e gera uma nova chave exclusiva para este casal"):
             ev_selecionado = st.session_state.dados["eventos"][st.session_state.evento_id]
             novo_token = shared.gerar_slug_token(ev_selecionado.get("noivos", "evento"), st.session_state.dados["eventos"])
             ev_selecionado["link_token"] = novo_token
