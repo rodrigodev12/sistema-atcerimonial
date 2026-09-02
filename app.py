@@ -224,22 +224,62 @@ section[data-testid="stSidebar"] .stCheckbox {
     background:       transparent !important;
 }
 
-section[data-testid="stSidebar"] [data-testid="stExpander"],
-section[data-testid="stSidebar"] details summary {
-    background-color: rgba(255,255,255,0.08) !important;
-    border-color: rgba(255,255,255,0.15) !important;
+/* Inputs e Selectbox elegantes na Sidebar */
+section[data-testid="stSidebar"] [data-testid="stSelectbox"] > div,
+section[data-testid="stSidebar"] div[data-baseweb="select"],
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] {
+    background-color: #1E293B !important;
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    color: #FFFFFF !important;
+}
+
+section[data-testid="stSidebar"] [data-baseweb="select"] * {
+    background-color: transparent !important;
+    color: #FFFFFF !important;
+    fill: #FFFFFF !important;
+}
+
+section[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    fill: #94A3B8 !important;
+    color: #94A3B8 !important;
 }
 
 section[data-testid="stSidebar"] input {
-    background-color: #FFFFFF !important;
-    color: #0F172A !important;
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px !important;
 }
 
-section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"],
-section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
-    background-color: #FFFFFF !important;
-    color: #0F172A !important;
-}/* 1. Alvo exato: O texto do primeiro elemento de cabeçalho do menu (Título Principal) */
+/* Dropdown flutuante do Selectbox */
+div[data-baseweb="popover"] ul,
+div[data-baseweb="popover"] [role="listbox"] {
+    background-color: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+}
+
+div[data-baseweb="popover"] li,
+div[data-baseweb="popover"] [role="option"] {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+}
+
+div[data-baseweb="popover"] li:hover,
+div[data-baseweb="popover"] [role="option"]:hover,
+div[data-baseweb="popover"] [aria-selected="true"] {
+    background-color: #334155 !important;
+}
+
+div[data-baseweb="popover"] li *,
+div[data-baseweb="popover"] [role="option"] * {
+    color: #FFFFFF !important;
+}
+
+/* 1. Alvo exato: O texto do primeiro elemento de cabeçalho do menu (Título Principal) */
 [data-testid="stSidebarNav"] div[data-anchored="true"],
 [data-testid="stSidebarNav"] span[data-anchored="true"],
 [data-testid="stSidebarNav"] div:first-child[data-anchored="true"] {
