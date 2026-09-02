@@ -227,8 +227,7 @@ section[data-testid="stSidebar"] .stCheckbox {
 /* Inputs e Selectbox elegantes na Sidebar */
 section[data-testid="stSidebar"] [data-testid="stSelectbox"] > div,
 section[data-testid="stSidebar"] div[data-baseweb="select"],
-section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] {
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
     background-color: #1E293B !important;
     background: #1E293B !important;
     border: 1px solid #334155 !important;
@@ -236,10 +235,19 @@ section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-c
     color: #FFFFFF !important;
 }
 
+section[data-testid="stSidebar"] div[data-baseweb="select"] input {
+    display: none !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
 section[data-testid="stSidebar"] [data-baseweb="select"] * {
-    background-color: transparent !important;
     color: #FFFFFF !important;
-    fill: #FFFFFF !important;
 }
 
 section[data-testid="stSidebar"] [data-baseweb="select"] svg {
@@ -247,7 +255,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] svg {
     color: #94A3B8 !important;
 }
 
-section[data-testid="stSidebar"] input {
+/* Apenas inputs reais de texto na Sidebar (ex: criar novo evento) */
+section[data-testid="stSidebar"] [data-testid="stTextInput"] input {
     background-color: #1E293B !important;
     color: #FFFFFF !important;
     border: 1px solid #334155 !important;
