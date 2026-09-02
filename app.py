@@ -231,18 +231,15 @@ section[data-testid="stSidebar"] details summary {
 }
 
 /* Selectbox e Inputs na Sidebar */
-section[data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"],
+section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="select-control"] * {
     background-color: #FFFFFF !important;
-    border-radius: 8px !important;
-    border: none !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSelectbox"] div[data-baseweb="select"] * {
     color: #0F172A !important;
 }
 
 section[data-testid="stSidebar"] [data-testid="stSelectbox"] svg {
     fill: #0F172A !important;
+    color: #0F172A !important;
 }
 
 section[data-testid="stSidebar"] input {
@@ -325,8 +322,7 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     color: #FFFFFF !important;
 }
 
-/* Estilo específico e elegante para botões dentro da Sidebar */
-section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]),
+/* Estilo específico e elegante EXCLUSIVO para botões de ação (st.button) na Sidebar */
 section[data-testid="stSidebar"] div.stButton > button,
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
     background-color: #1E293B !important;
@@ -341,7 +337,6 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
     width: 100% !important;
 }
 
-section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]):hover,
 section[data-testid="stSidebar"] div.stButton > button:hover,
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
     background-color: #334155 !important;
@@ -350,7 +345,6 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
     color: #FFFFFF !important;
 }
 
-section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]) *,
 section[data-testid="stSidebar"] div.stButton > button *,
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button * {
     color: #FFFFFF !important;
