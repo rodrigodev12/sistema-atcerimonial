@@ -572,15 +572,23 @@ if not st.session_state.logado:
         text-align: center !important;
     }
 
-    /* Labels dos campos: Branco puro, nítido e destacado */
-    form[data-testid="stForm"] label,
-    form[data-testid="stForm"] label *,
-    form[data-testid="stForm"] [data-testid="stWidgetLabel"],
-    form[data-testid="stForm"] [data-testid="stWidgetLabel"] * {
+    /* Labels dos campos: Branco 100% opaco, nítido e em destaque */
+    label,
+    label p,
+    label div,
+    label span,
+    [data-testid="stWidgetLabel"],
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] div,
+    [data-testid="stWidgetLabel"] span,
+    [data-testid="stTextInput"] label,
+    [data-testid="stTextInput"] label p {
         color: #FFFFFF !important;
+        opacity: 1 !important;
         font-size: 14px !important;
         font-weight: 600 !important;
         margin-bottom: 4px !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
     }
 
     /* Caixa dos inputs 100% branca e nítida */
@@ -618,38 +626,41 @@ if not st.session_state.logado:
         box-shadow: none !important;
     }
 
-    /* Botão Entrar no Painel */
-    form[data-testid="stForm"] div.stFormSubmitButton > button,
-    form[data-testid="stForm"] button[data-testid="baseButton-secondary"],
-    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"] {
+    /* Botão Entrar no Painel com alto destaque */
+    div.stFormSubmitButton > button,
+    form button,
+    form button[kind="primaryFormSubmit"],
+    form button[kind="secondaryFormSubmit"],
+    form button[data-testid="stBaseButton-primary"],
+    form button[data-testid="stBaseButton-secondary"],
+    form button[data-testid="baseButton-secondary"] {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         background-color: #2563EB !important;
         color: #FFFFFF !important;
+        opacity: 1 !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 12px 16px !important;
         font-size: 15px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         letter-spacing: 0.3px !important;
-        margin-top: 14px !important;
+        margin-top: 16px !important;
         width: 100% !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45) !important;
         transition: all 0.2s ease !important;
         cursor: pointer !important;
     }
-    form[data-testid="stForm"] div.stFormSubmitButton > button:hover,
-    form[data-testid="stForm"] button[data-testid="baseButton-secondary"]:hover,
-    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"]:hover {
+    div.stFormSubmitButton > button:hover,
+    form button:hover {
         background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%) !important;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.65) !important;
         transform: translateY(-1px) !important;
     }
-    form[data-testid="stForm"] div.stFormSubmitButton > button *,
-    form[data-testid="stForm"] button[data-testid="baseButton-secondary"] *,
-    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"] * {
+    div.stFormSubmitButton > button *,
+    form button * {
         color: #FFFFFF !important;
         font-size: 15px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }
 
     /* Rodapé */
@@ -740,7 +751,7 @@ if not st.session_state.logado:
         )
         u = st.text_input("Usuário", key="li_user", placeholder="Digite seu usuário")
         s = st.text_input("Senha", type="password", key="li_pass", placeholder="Digite sua senha")
-        submitted = st.form_submit_button("Entrar no Painel", use_container_width=True)
+        submitted = st.form_submit_button("Entrar no Painel", use_container_width=True, type="primary")
 
     if submitted:
         usr = st.session_state.dados["usuarios"].get(u)
