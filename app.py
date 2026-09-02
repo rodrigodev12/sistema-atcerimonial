@@ -493,42 +493,149 @@ if not st.session_state.logado:
     section[data-testid="stSidebar"] { display: none !important; }
     header[data-testid="stHeader"]   { display: none !important; }
     
-    /* Plano de fundo com gradiente azul marinho para azul turquesa */
+    /* Fundo degradê sofisticado em tela cheia */
     .stApp {
-        background: linear-gradient(135deg, #0B2545 0%, #134074 45%, #00B4D8 100%) !important;
+        background: radial-gradient(circle at 50% 28%, #134074 0%, #0B2545 60%, #06182E 100%) !important;
         background-attachment: fixed !important;
+        min-height: 100vh !important;
     }
     
-    /* Estilo do card de login com sombra elegante e glassmorphism */
-    div[data-testid="stVerticalBlockBorderWrapper"],
-    div[class*="stVerticalBlockBorderWrapper"],
-    form[data-testid="stForm"] {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35) !important;
+    /* Centralização perfeita vertical e horizontal no viewport */
+    .block-container,
+    [data-testid="stAppViewBlockContainer"] {
+        min-height: 94vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        max-width: 440px !important;
+        margin: auto !important;
+        padding: 24px 16px !important;
     }
-    
-    /* Textos no fundo escuro */
+
+    div[data-testid="stVerticalBlock"] {
+        width: 100% !important;
+        max-width: 440px !important;
+    }
+
+    /* Cabeçalho do Login */
+    .login-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .login-logo {
+        font-size: 42px;
+        line-height: 1;
+        margin-bottom: 10px;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+    }
     .login-title {
         color: #FFFFFF !important;
-        text-align: center;
-        font-size: 30px;
-        margin-bottom: 2px;
-        font-weight: 700;
-        text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        font-size: 28px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.35);
     }
     .login-subtitle {
-        color: rgba(255, 255, 255, 0.85) !important;
-        text-align: center;
-        margin-bottom: 16px;
-        font-size: 14px;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        color: rgba(255, 255, 255, 0.75) !important;
+        font-size: 14px !important;
+        margin-top: 6px !important;
+        margin-bottom: 0 !important;
+        letter-spacing: 0.2px !important;
     }
-    
-    /* Ajusta a cor dos textos do formulário para o mesmo tom do subtítulo (branco com opacidade) */
-    h1, h2, h3, label, label p, [data-testid="stWidgetLabel"] p, .stSubheader p {
-        color: rgba(255, 255, 255, 0.85) !important;
+
+    /* Card com Glassmorphism elegante (caixa única) */
+    form[data-testid="stForm"] {
+        background: rgba(15, 23, 42, 0.65) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        border-radius: 16px !important;
+        padding: 28px 24px 24px 24px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+        width: 100% !important;
+    }
+
+    .form-header-title {
+        color: #FFFFFF !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        margin: 0 0 4px 0 !important;
+        text-align: center !important;
+    }
+    .form-header-sub {
+        color: rgba(255, 255, 255, 0.65) !important;
+        font-size: 13px !important;
+        margin: 0 0 18px 0 !important;
+        text-align: center !important;
+    }
+
+    /* Labels dos campos */
+    form[data-testid="stForm"] label p {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* Inputs de texto */
+    form[data-testid="stForm"] input {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        transition: all 0.2s ease !important;
+    }
+    form[data-testid="stForm"] input:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    }
+
+    /* Botão Entrar no Painel */
+    form[data-testid="stForm"] div.stFormSubmitButton > button,
+    form[data-testid="stForm"] button[data-testid="baseButton-secondary"],
+    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"] {
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        background-color: #2563EB !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.3px !important;
+        margin-top: 14px !important;
+        width: 100% !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+    form[data-testid="stForm"] div.stFormSubmitButton > button:hover,
+    form[data-testid="stForm"] button[data-testid="baseButton-secondary"]:hover,
+    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"]:hover {
+        background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6) !important;
+        transform: translateY(-1px) !important;
+    }
+    form[data-testid="stForm"] div.stFormSubmitButton > button *,
+    form[data-testid="stForm"] button[data-testid="baseButton-secondary"] *,
+    form[data-testid="stForm"] button[data-testid="stBaseButton-secondary"] * {
+        color: #FFFFFF !important;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Rodapé */
+    .login-footer {
+        text-align: center;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5) !important;
+        margin-top: 22px;
+        letter-spacing: 0.2px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -593,43 +700,43 @@ if not st.session_state.logado:
     </script>
     """, unsafe_allow_javascript=True)
 
-    _, col, _ = st.columns([1, 1.1, 1])
-    with col:
-        st.write("")
+    st.markdown(
+        "<div class='login-header'>"
+        "<div class='login-logo'>💍</div>"
+        "<h1 class='notranslate login-title'>AT Cerimonial</h1>"
+        "<p class='login-subtitle'>Gestão Integrada de Eventos</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.form("form_login"):
         st.markdown(
-            "<h1 class='notranslate login-title'>💍 AT Cerimonial</h1>"
-            "<p class='login-subtitle'>Gestão Integrada de Eventos</p>",
-            unsafe_allow_html=True,
+            "<div class='form-header-title'>Acesso Restrito</div>"
+            "<div class='form-header-sub'>Entre com suas credenciais para continuar</div>",
+            unsafe_allow_html=True
         )
-        with st.container(border=True):
-            st.subheader("Acesso Restrito", divider=False)
-            with st.form("form_login"):
-                u = st.text_input("Usuário", key="li_user")
-                s = st.text_input("Senha", type="password", key="li_pass")
-                _, cb, _ = st.columns([1, 2, 1])
-                with cb:
-                    submitted = st.form_submit_button("Entrar no Painel")
+        u = st.text_input("Usuário", key="li_user", placeholder="Digite seu usuário")
+        s = st.text_input("Senha", type="password", key="li_pass", placeholder="Digite sua senha")
+        submitted = st.form_submit_button("Entrar no Painel", use_container_width=True)
 
-            if submitted:
-                usr = st.session_state.dados["usuarios"].get(u)
-                if usr and usr["senha"] == s:
-                    st.query_params.clear()
-                    st.session_state.update(
-                        logado=True, usuario=u,
-                        tipo_usuario=usr["tipo"],
-                        perfil=usr["tipo"].upper(),
-                        evento_id=usr.get("evento_id"),
-                    )
-                    st.rerun()
-                else:
-                    st.error("Usuário ou senha inválidos.")
+    if submitted:
+        usr = st.session_state.dados["usuarios"].get(u)
+        if usr and usr["senha"] == s:
+            st.query_params.clear()
+            st.session_state.update(
+                logado=True, usuario=u,
+                tipo_usuario=usr["tipo"],
+                perfil=usr["tipo"].upper(),
+                evento_id=usr.get("evento_id"),
+            )
+            st.rerun()
+        else:
+            st.error("Usuário ou senha inválidos.")
 
-
-
-        st.markdown(
-            "<p style='text-align:center;font-size:11px;color:rgba(255, 255, 255, 0.85);opacity:0.85;margin-top:14px;'>AT Cerimonial © 2026</p>",
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        "<p class='login-footer'>AT Cerimonial © 2026</p>",
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 is_admin = st.session_state.tipo_usuario == "admin"
