@@ -314,6 +314,39 @@ div.stButton > button *, div.stFormSubmitButton > button * {
     color: #FFFFFF !important;
 }
 
+/* Estilo específico e elegante para botões dentro da Sidebar */
+section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]),
+section[data-testid="stSidebar"] div.stButton > button,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+    background-color: #1E293B !important;
+    background: #1E293B !important;
+    color: #FFFFFF !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    width: 100% !important;
+}
+
+section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]):hover,
+section[data-testid="stSidebar"] div.stButton > button:hover,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+    background-color: #334155 !important;
+    background: #334155 !important;
+    border-color: #475569 !important;
+    color: #FFFFFF !important;
+}
+
+section[data-testid="stSidebar"] button:not([data-testid="stSidebarCollapseButton"]) *,
+section[data-testid="stSidebar"] div.stButton > button *,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button * {
+    color: #FFFFFF !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
 .alert-row {
     background: #FFF7ED;
     border-left: 4px solid #F97316;
