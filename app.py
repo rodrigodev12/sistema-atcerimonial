@@ -572,27 +572,50 @@ if not st.session_state.logado:
         text-align: center !important;
     }
 
-    /* Labels dos campos */
-    form[data-testid="stForm"] label p {
-        color: rgba(255, 255, 255, 0.9) !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
+    /* Labels dos campos: Branco puro, nítido e destacado */
+    form[data-testid="stForm"] label,
+    form[data-testid="stForm"] label *,
+    form[data-testid="stForm"] [data-testid="stWidgetLabel"],
+    form[data-testid="stForm"] [data-testid="stWidgetLabel"] * {
+        color: #FFFFFF !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
         margin-bottom: 4px !important;
     }
 
-    /* Inputs de texto */
+    /* Caixa dos inputs 100% branca e nítida */
+    form[data-testid="stForm"] div[data-baseweb="input"],
+    form[data-testid="stForm"] div[data-baseweb="base-input"],
+    form[data-testid="stForm"] div[data-baseweb="input"] > div,
     form[data-testid="stForm"] input {
         background-color: #FFFFFF !important;
+        background: #FFFFFF !important;
         color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
         border-radius: 8px !important;
-        padding: 10px 14px !important;
-        font-size: 14px !important;
-        transition: all 0.2s ease !important;
     }
-    form[data-testid="stForm"] input:focus {
+
+    form[data-testid="stForm"] div[data-baseweb="input"] {
+        border: 1px solid #CBD5E1 !important;
+    }
+
+    form[data-testid="stForm"] div[data-baseweb="input"]:focus-within {
         border-color: #3B82F6 !important;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+    }
+
+    form[data-testid="stForm"] input {
+        border: none !important;
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+    }
+
+    /* Ícone de mostrar/ocultar senha */
+    form[data-testid="stForm"] div[data-baseweb="input"] button,
+    form[data-testid="stForm"] div[data-baseweb="input"] svg {
+        color: #64748B !important;
+        fill: #64748B !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }
 
     /* Botão Entrar no Painel */
