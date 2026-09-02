@@ -383,20 +383,13 @@ footer {
 if "dados" not in st.session_state:
     st.session_state.dados = shared.carregar_dados()
     
-    # Migração automática de tokens antigos/longos para slugs curtos e amigáveis
+    # Garante tokens únicos e seguros para todos os eventos
     _updated = False
     for _ev_id, _ev in st.session_state.dados.get("eventos", {}).items():
         _tok = _ev.get("link_token", "")
-        # Se o token for longo (hexadecimal antigo), começar com "ev_" ou estiver vazio
-        if len(_tok) > 20 or _tok.startswith("ev_") or not _tok:
-            _slug_base = shared.limpar_nome_slug(_ev.get("noivos", "evento"))
-            _slug = _slug_base
-            _existentes = {_e.get("link_token") for _k, _e in st.session_state.dados["eventos"].items() if _k != _ev_id}
-            import random, string
-            while _slug in _existentes:
-                _suffix = "".join(random.choices(string.digits, k=3))
-                _slug = f"{_slug_base}-{_suffix}"
-            _ev["link_token"] = _slug
+        # Se o token for vazio, começar com "ev_" ou for igual ao ev_id
+        if not _tok or _tok == _ev_id or _tok.startswith("ev_"):
+            _ev["link_token"] = shared.gerar_slug_token(_ev.get("noivos", "evento"), st.session_state.dados["eventos"])
             _updated = True
             
     if _updated:
@@ -411,13 +404,13 @@ for k, v in _ss_defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# Recupera sessão por link direto do evento ou parâmetro de sessão
+# Recupera sessão por link direto do evento (Magic Link com token seguro)
 if not st.session_state.logado:
-    ev_id_url = st.query_params.get("evento") or st.query_params.get("ev")
+    ev_id_url = st.query_params.get("evento") or st.query_params.get("ev") or st.query_params.get("token") or st.query_params.get("acesso")
     if ev_id_url:
         evento_encontrado_id = None
         for ev_id, ev in st.session_state.dados.get("eventos", {}).items():
-            if ev.get("link_token") == ev_id_url or ev_id == ev_id_url:
+            if ev.get("link_token") and ev.get("link_token") == ev_id_url:
                 evento_encontrado_id = ev_id
                 break
         
@@ -430,6 +423,8 @@ if not st.session_state.logado:
                 evento_id=evento_encontrado_id,
             )
             st.rerun()
+        else:
+            st.warning("⚠️ Link de acesso não encontrado ou expirado. Por favor, verifique com o cerimonial.")
 else:
     if "session" in st.query_params:
         del st.query_params["session"]
@@ -710,6 +705,14 @@ with st.sidebar:
           }}
         </script>
         """, height=55)
+
+        if st.button("🔄 Gerar Novo Link (Revogar Anterior)", key="btn_revogar_link", use_container_width=True, help="Cancela o link anterior e gera uma nova chave exclusiva para este casal"):
+            ev_selecionado = st.session_state.dados["eventos"][st.session_state.evento_id]
+            novo_token = shared.gerar_slug_token(ev_selecionado.get("noivos", "evento"), st.session_state.dados["eventos"])
+            ev_selecionado["link_token"] = novo_token
+            shared.salvar_dados(st.session_state.dados)
+            st.toast("✅ Novo link seguro gerado com sucesso! O link anterior foi invalidado.")
+            st.rerun()
 
         # --- Seções Extras do Administrador ---
         st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)

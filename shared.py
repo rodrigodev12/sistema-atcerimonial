@@ -384,7 +384,7 @@ def obter_nome_noivos_por_token(token: str) -> str:
             if response.data:
                 dados = response.data[0]["data"]
                 for ev in dados.get("eventos", {}).values():
-                    if ev.get("link_token") == token or ev.get("ev_id") == token:
+                    if ev.get("link_token") == token:
                         return ev.get("noivos", "")
         except Exception:
             pass
@@ -394,7 +394,7 @@ def obter_nome_noivos_por_token(token: str) -> str:
             with open(DB_FILE, "r", encoding="utf-8") as f:
                 dados = json.load(f)
                 for ev in dados.get("eventos", {}).values():
-                    if ev.get("link_token") == token or ev.get("ev_id") == token:
+                    if ev.get("link_token") == token:
                         return ev.get("noivos", "")
     except Exception:
         pass
@@ -416,9 +416,11 @@ def gerar_slug_token(noivos: str, eventos: dict) -> str:
     if not base_slug:
         base_slug = "evento"
     
-    slug = base_slug
     tokens_existentes = {ev.get("link_token") for ev in eventos.values() if ev.get("link_token")}
-    while slug in tokens_existentes:
-        suffix = "".join(random.choices(string.digits, k=3))
+    while True:
+        # Sufixo criptográfico aleatório seguro (ex: maria-joao-8a4b2c1d)
+        suffix = secrets.token_hex(4)
         slug = f"{base_slug}-{suffix}"
-    return slug
+        if slug not in tokens_existentes:
+            return slug
+
