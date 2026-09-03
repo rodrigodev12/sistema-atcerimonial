@@ -189,10 +189,21 @@ if can_edit:
     # ═══════════════════════════════════════════════════════════════════════════
     # DEMAIS CAMPOS DO BRIEFING
     # ═══════════════════════════════════════════════════════════════════════════
-    st.text_input(
+    try:
+        convidados_val = int(briefing.get("convidados") or 0)
+        if convidados_val < 0:
+            convidados_val = 0
+    except (ValueError, TypeError):
+        convidados_val = 0
+
+    st.number_input(
         "Número estimado de convidados",
-        value=briefing["convidados"],
+        min_value=0,
+        max_value=10000,
+        value=convidados_val,
+        step=1,
         key=f"bf_convidados_{st.session_state.evento_id}",
+        help="Use os botões + e - ou digite o número previsto de convidados.",
         on_change=shared.update_briefing_field,
         args=(st.session_state.evento_id, "convidados", f"bf_convidados_{st.session_state.evento_id}")
     )
@@ -260,7 +271,14 @@ else:
     if briefing.get("estilo"):
         shared.bf_field("Conceito / Detalhes de Estilo", briefing["estilo"])
         
-    shared.bf_field("Convidados estimados",      briefing["convidados"])
+    val_conv = briefing.get("convidados")
+    try:
+        val_conv_num = int(val_conv or 0)
+        exib_conv = f"{val_conv_num} convidados" if val_conv_num > 0 else ""
+    except Exception:
+        exib_conv = str(val_conv) if val_conv else ""
+
+    shared.bf_field("Convidados estimados",      exib_conv)
     shared.bf_field("Paleta de cores",           briefing["cores"])
     shared.bf_field("Restrições alimentares",    briefing["alimentar"])
     shared.bf_field("Preferências musicais",     briefing["musica"])

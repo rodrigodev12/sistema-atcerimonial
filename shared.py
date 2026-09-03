@@ -118,7 +118,7 @@ BRIEFING_DEFAULTS = {
     "estilo": "",
     "referencias_visuais": [],
     "pinterest_link": "",
-    "convidados": "",
+    "convidados": 0,
     "cores": "",
     "alimentar": "",
     "musica": "",
