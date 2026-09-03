@@ -1009,7 +1009,8 @@ if is_admin:
 lista_paginas.extend([pag_noivos, pag_fornecedores, pag_roteiro])
 
 # O título da chave vira o cabeçalho fixo no topo absoluto do menu lateral!
-secao_titulo = f"AT Cerimonial ({st.session_state.tipo_usuario.upper()})"
+tipo_exibicao = "Noivos" if st.session_state.tipo_usuario == "cliente" else st.session_state.tipo_usuario.upper()
+secao_titulo = f"AT Cerimonial ({tipo_exibicao})"
 menu_com_secao = {
     secao_titulo: lista_paginas
 }
