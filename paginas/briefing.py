@@ -9,8 +9,27 @@ if not evento_atual:
 is_admin = st.session_state.tipo_usuario == "admin"
 can_edit = is_admin or st.session_state.tipo_usuario == "cliente"
 
-st.markdown(f"### Briefing Inicial — {evento_atual['noivos']}")
 briefing = shared.get_briefing(evento_atual)
+status_atual = briefing.get("status", "Rascunho")
+finalizado_em = briefing.get("finalizado_em")
+is_concluido = status_atual == "Concluído"
+status_label = "✅ Briefing Concluído" if is_concluido else "📝 Em Preenchimento"
+status_style = "background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;" if is_concluido else "background:#FEF3C7; color:#B45309; border:1px solid #FDE68A;"
+
+col_h_tit, col_h_btn = st.columns([3, 1.2])
+with col_h_tit:
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px; margin-bottom: 8px;">
+        <h3 style="margin: 0; padding: 0;">Briefing Inicial — {evento_atual['noivos']}</h3>
+        <span style="font-size: 0.76rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; {status_style}">{status_label}</span>
+    </div>
+    """, unsafe_allow_html=True)
+with col_h_btn:
+    if can_edit:
+        st.write("")
+        if st.button("💾 Salvar Rascunho", key=f"btn_salvar_topo_{st.session_state.evento_id}", use_container_width=True):
+            shared.salvar_briefing_completo(st.session_state.evento_id, status="Rascunho")
+            st.rerun()
 
 # Dialog para visualização de imagem em alta definição
 if hasattr(st, "dialog"):
@@ -360,9 +379,46 @@ if can_edit:
         on_change=shared.update_briefing_field,
         args=(st.session_state.evento_id, "obs", f"bf_obs_{st.session_state.evento_id}")
     )
-    st.caption("✨ As alterações no briefing são salvas automaticamente.")
+    st.markdown("<hr style='margin: 22px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+    col_info, col_save, col_done = st.columns([2.2, 1.1, 1.3])
+    with col_info:
+        if is_concluido:
+            st.markdown(f"""
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.1rem;">🎉</span>
+                <div>
+                    <div style="font-size:0.88rem; font-weight:600; color:#15803D;">Briefing Finalizado {f'em {finalizado_em}' if finalizado_em else ''}</div>
+                    <div style="font-size:0.76rem; color:#64748B;">As alterações continuam sendo gravadas em tempo real.</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.1rem;">💾</span>
+                <div>
+                    <div style="font-size:0.88rem; font-weight:600; color:#334155;">Salvamento Físico & Automático</div>
+                    <div style="font-size:0.76rem; color:#64748B;">Clique ao lado para salvar ou finalizar quando concluir suas respostas.</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    with col_save:
+        if st.button("💾 Salvar Rascunho", key=f"btn_save_draft_{st.session_state.evento_id}", use_container_width=True):
+            shared.salvar_briefing_completo(st.session_state.evento_id, status="Rascunho")
+            st.rerun()
+    with col_done:
+        btn_txt = "🔄 Reabrir Briefing" if is_concluido else "🚀 Finalizar Briefing"
+        novo_status = "Rascunho" if is_concluido else "Concluído"
+        tipo_btn = "secondary" if is_concluido else "primary"
+        if st.button(btn_txt, type=tipo_btn, key=f"btn_finish_brief_{st.session_state.evento_id}", use_container_width=True):
+            shared.salvar_briefing_completo(st.session_state.evento_id, status=novo_status)
+            st.rerun()
 else:
-    st.info("🔒 Briefing registrado pelo cerimonial.")
+    if is_concluido:
+        st.success(f"🔒 Briefing finalizado e registrado pelo cerimonial {f'em {finalizado_em}' if finalizado_em else ''}.")
+    else:
+        st.info("🔒 Briefing registrado pelo cerimonial (em preenchimento).")
     
     # Exibição das referências visuais no modo somente leitura
     st.markdown("#### 📸 Estilo do Evento & Referências Visuais")

@@ -9,6 +9,7 @@ import string
 import secrets
 import base64
 import hashlib
+from datetime import datetime
 from PIL import Image, ImageOps
 from supabase import create_client, Client
 
@@ -125,6 +126,8 @@ BRIEFING_DEFAULTS = {
     "alimentar": "",
     "musica": "",
     "obs": "",
+    "status": "Rascunho",
+    "finalizado_em": "",
 }
 
 LARGURAS_PADRAO = {
@@ -516,6 +519,58 @@ def toggle_restricao_alimentar(ev_id: str, tag: str, key: str) -> None:
     except Exception:
         pass
 
+def salvar_briefing_completo(ev_id: str, status: str = "Rascunho") -> bool:
+    """Salva explicitamente todos os campos do briefing e atualiza seu status."""
+    try:
+        if "dados" not in st.session_state or st.session_state.dados is None:
+            st.session_state.dados = carregar_dados()
+        dados = st.session_state.dados
+    except Exception:
+        dados = carregar_dados()
+
+    ev = dados["eventos"].get(ev_id)
+    if not ev:
+        return False
+    if "briefing" not in ev:
+        ev["briefing"] = dict(BRIEFING_DEFAULTS)
+
+    bf = ev["briefing"]
+    
+    campos_map = {
+        "estilo": f"bf_estilo_{ev_id}",
+        "convidados": f"bf_convidados_{ev_id}",
+        "cores": f"bf_cores_{ev_id}",
+        "pinterest_link": f"bf_pinterest_{ev_id}",
+        "alimentar": f"bf_alimentar_{ev_id}",
+        "musica": f"bf_musica_{ev_id}",
+        "obs": f"bf_obs_{ev_id}",
+    }
+    
+    for campo, ss_key in campos_map.items():
+        if hasattr(st, "session_state") and ss_key in st.session_state:
+            bf[campo] = st.session_state[ss_key]
+
+    bf["status"] = status
+    if status == "Concluído":
+        try:
+            from zoneinfo import ZoneInfo
+            fuso = ZoneInfo("America/Sao_Paulo")
+            bf["finalizado_em"] = datetime.now(fuso).strftime("%d/%m/%Y às %H:%M")
+        except Exception:
+            bf["finalizado_em"] = datetime.now().strftime("%d/%m/%Y às %H:%M")
+            
+    salvar_dados(dados)
+    
+    try:
+        if status == "Concluído":
+            st.toast("🎉 Briefing finalizado com sucesso!", icon="✅")
+        else:
+            st.toast("💾 Rascunho salvo com sucesso!", icon="💾")
+    except Exception:
+        pass
+        
+    return True
+
 def get_ev(dados: dict, ev_id: str) -> dict:
     return dados["eventos"][ev_id]
 
@@ -578,6 +633,10 @@ def get_briefing(evento: dict) -> dict:
         bf["paleta_cores"] = []
     if "restricoes_selecionadas" not in bf or not isinstance(bf["restricoes_selecionadas"], list):
         bf["restricoes_selecionadas"] = []
+    if "status" not in bf:
+        bf["status"] = "Rascunho"
+    if "finalizado_em" not in bf:
+        bf["finalizado_em"] = ""
     return bf
 
 def bf_field(label: str, valor) -> None:
