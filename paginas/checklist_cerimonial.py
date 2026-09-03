@@ -28,7 +28,7 @@ if sub_checklist_cerim == "📊 Acompanhar Checklist":
     for grupo, itens in grupos.items():
         feitos_g = sum(1 for i in itens if i["feito"])
         all_done = feitos_g == len(itens)
-        label    = f"{'✅' if all_done else '🗓️'}  {grupo}  —  {feitos_g}/{len(itens)} concluídos"
+        label    = f"{'✅' if all_done else '📋'}  {grupo}  —  {feitos_g}/{len(itens)} concluídos"
 
         with st.expander(label, expanded=not all_done):
             for item in itens:

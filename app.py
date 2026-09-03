@@ -980,7 +980,7 @@ with st.sidebar:
     else:
         ev_cli = shared.get_ev(st.session_state.dados, st.session_state.evento_id)
         st.markdown(f"**{ev_cli['noivos']}**")
-        st.markdown(f"📅 {ev_cli['data']}")
+        st.markdown(f"<div style='display:flex; align-items:center; gap:6px; color:#FFFFFF;'>{shared.ICON_CALENDARIO} {ev_cli['data']}</div>", unsafe_allow_html=True)
 
     # --- Botão de Logout comum para ambos ---
     st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)

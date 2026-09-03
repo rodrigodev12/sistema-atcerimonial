@@ -7,7 +7,7 @@ if not evento_atual:
     st.info("Por favor, selecione ou acesse um evento válido.")
     st.stop()
 
-st.markdown(f"### Dashboard — {evento_atual['noivos']}  ·  📅 {evento_atual['data']}")
+st.markdown(f"### Dashboard — {evento_atual['noivos']} &nbsp;·&nbsp; {shared.ICON_CALENDARIO}{evento_atual['data']}", unsafe_allow_html=True)
 
 # ⏳ Contagem Regressiva
 from datetime import datetime
@@ -31,7 +31,7 @@ try:
     else:
         st.success(f"✨ **O casamento aconteceu em {evento_atual['data']}! 🎉**")
 except Exception:
-    st.warning(f"📅 Data do evento cadastrada: **{evento_atual['data']}** (insira no formato DD/MM/AAAA para habilitar contagem)")
+    st.warning(f"Data do evento cadastrada: **{evento_atual['data']}** (insira no formato DD/MM/AAAA para habilitar contagem)")
 
 
 
