@@ -1,6 +1,11 @@
+import unicodedata
 import streamlit as st
 import pandas as pd
 import shared
+
+def _sort_key(s: str) -> str:
+    s_clean = unicodedata.normalize('NFKD', str(s or ""))
+    return "".join(c for c in s_clean if not unicodedata.combining(c)).lower().strip()
 
 evento_atual = shared.get_evento_atual()
 if not evento_atual:
@@ -31,6 +36,10 @@ if busca:
         df_view["SETOR"].str.contains(busca, case=False, na=False) |
         df_view["EMPRESA"].str.contains(busca, case=False, na=False)
     ]
+
+# Ordena os fornecedores em ordem alfabética de A a Z pelo nome do Setor
+if not df_view.empty and "SETOR" in df_view.columns:
+    df_view = df_view.sort_values(by="SETOR", key=lambda col: col.map(_sort_key))
 
 # ── Mapeamento de cores por status ────────────────────────────────────────
 STATUS_CORES = {
@@ -202,7 +211,7 @@ if is_admin:
         
         with c_del:
             st.markdown("**Excluir Setor**")
-            setores_lista = [f["SETOR"] for f in evento_atual["fornecedores"]]
+            setores_lista = sorted([f["SETOR"] for f in evento_atual["fornecedores"]], key=_sort_key)
             setor_para_excluir = st.selectbox("Selecione o Setor para Excluir", setores_lista, key="del_setor_name")
             if st.button("🗑️ Excluir Setor Selecionado", key="btn_del_setor"):
                 evento_atual["fornecedores"] = [f for f in evento_atual["fornecedores"] if f["SETOR"] != setor_para_excluir]
