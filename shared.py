@@ -120,6 +120,7 @@ BRIEFING_DEFAULTS = {
     "pinterest_link": "",
     "convidados": 0,
     "cores": "",
+    "paleta_cores": [],
     "alimentar": "",
     "musica": "",
     "obs": "",
@@ -422,6 +423,68 @@ def atualizar_legenda_referencia(ev_id: str, ref_id: str, legenda: str) -> None:
                 salvar_dados(st.session_state.dados)
                 break
 
+def adicionar_cor_paleta(ev_id: str, hex_code: str, nome: str = "") -> bool:
+    """Adiciona uma cor na paleta do briefing."""
+    try:
+        if "dados" not in st.session_state or st.session_state.dados is None:
+            st.session_state.dados = carregar_dados()
+        dados = st.session_state.dados
+    except Exception:
+        dados = carregar_dados()
+
+    ev = dados["eventos"].get(ev_id)
+    if not ev:
+        return False
+    if "briefing" not in ev:
+        ev["briefing"] = dict(BRIEFING_DEFAULTS)
+    if "paleta_cores" not in ev["briefing"]:
+        ev["briefing"]["paleta_cores"] = []
+
+    hex_norm = hex_code.strip().upper()
+    nome_norm = nome.strip() or hex_norm
+
+    # Evita duplicação exata da cor hex
+    if any(c.get("hex", "").upper() == hex_norm for c in ev["briefing"]["paleta_cores"]):
+        try:
+            st.toast(f"A cor {hex_norm} já está na sua paleta!", icon="⚠️")
+        except Exception:
+            pass
+        return False
+
+    ev["briefing"]["paleta_cores"].append({"hex": hex_norm, "nome": nome_norm})
+    ev["briefing"]["cores"] = ", ".join(c.get("nome") or c.get("hex") for c in ev["briefing"]["paleta_cores"])
+    salvar_dados(dados)
+    try:
+        st.toast(f"Cor {nome_norm} adicionada à paleta!", icon="🎨")
+    except Exception:
+        pass
+    return True
+
+def remover_cor_paleta(ev_id: str, index: int) -> bool:
+    """Remove uma cor da paleta do briefing pelo índice."""
+    try:
+        if "dados" not in st.session_state or st.session_state.dados is None:
+            st.session_state.dados = carregar_dados()
+        dados = st.session_state.dados
+    except Exception:
+        dados = carregar_dados()
+
+    ev = dados["eventos"].get(ev_id)
+    if not ev or "briefing" not in ev or "paleta_cores" not in ev["briefing"]:
+        return False
+
+    paleta = ev["briefing"]["paleta_cores"]
+    if 0 <= index < len(paleta):
+        removida = paleta.pop(index)
+        ev["briefing"]["cores"] = ", ".join(c.get("nome") or c.get("hex") for c in paleta)
+        salvar_dados(dados)
+        try:
+            st.toast(f"Cor {removida.get('nome')} removida.", icon="🗑️")
+        except Exception:
+            pass
+        return True
+    return False
+
 def get_ev(dados: dict, ev_id: str) -> dict:
     return dados["eventos"][ev_id]
 
@@ -480,6 +543,8 @@ def get_briefing(evento: dict) -> dict:
         bf["referencias_visuais"] = []
     if "pinterest_link" not in bf:
         bf["pinterest_link"] = ""
+    if "paleta_cores" not in bf or not isinstance(bf["paleta_cores"], list):
+        bf["paleta_cores"] = []
     return bf
 
 def bf_field(label: str, valor) -> None:

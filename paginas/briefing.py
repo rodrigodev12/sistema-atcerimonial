@@ -207,14 +207,98 @@ if can_edit:
         on_change=shared.update_briefing_field,
         args=(st.session_state.evento_id, "convidados", f"bf_convidados_{st.session_state.evento_id}")
     )
-    st.text_input(
-        "Paleta de cores principal",
-        value=briefing["cores"],
-        placeholder="Ex: Branco, verde esmeralda e dourado",
-        key=f"bf_cores_{st.session_state.evento_id}",
-        on_change=shared.update_briefing_field,
-        args=(st.session_state.evento_id, "cores", f"bf_cores_{st.session_state.evento_id}")
-    )
+    # ═══════════════════════════════════════════════════════════════════════════
+    # PALETA DE CORES PRINCIPAL (SELETOR VISUAL + TAGS COLORIDAS)
+    # ═══════════════════════════════════════════════════════════════════════════
+    st.markdown("""
+    <div style="margin-top: 14px; margin-bottom: 6px;">
+        <label style="font-size: 1.05rem; font-weight: 600; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+            <span>🎨 Paleta de Cores Principal</span>
+            <span style="font-size: 0.75rem; font-weight: 600; background: #FEF3C7; color: #92400E; padding: 2px 10px; border-radius: 12px;">Seletor Visual & Tags</span>
+        </label>
+        <p style="font-size: 0.85rem; color: #64748B; margin: 2px 0 8px 0;">
+            Monte a paleta oficial do casamento selecionando as cores exatas e visualizando a harmonia entre elas.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    paleta = briefing.get("paleta_cores", [])
+
+    # Exibição da faixa contínua da paleta (harmonia visual)
+    if paleta:
+        strips_html = "".join([f"<div style='flex: 1; height: 100%; background: {c['hex']};' title='{c.get('nome') or c['hex']} ({c['hex']})'></div>" for c in paleta])
+        st.markdown(f"""
+        <div style="display: flex; height: 36px; border-radius: 10px; overflow: hidden; margin-bottom: 12px; border: 1px solid #CBD5E1; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+            {strips_html}
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Tags coloridas com botão de exclusão
+        st.markdown("<div style='font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 6px;'>Cores Selecionadas:</div>", unsafe_allow_html=True)
+        cols_cores = st.columns(min(len(paleta), 4))
+        for idx, cor in enumerate(paleta):
+            col_c = cols_cores[idx % min(len(paleta), 4)]
+            with col_c:
+                c_card, c_del = st.columns([3, 1])
+                with c_card:
+                    st.markdown(f"""
+                    <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; padding: 6px 10px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                        <div style="width: 22px; height: 22px; border-radius: 50%; background: {cor['hex']}; border: 1.5px solid rgba(0,0,0,0.15); flex-shrink: 0;"></div>
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <div style="font-weight: 600; font-size: 0.82rem; color: #1E293B; line-height: 1.2;">{cor.get('nome') or cor['hex']}</div>
+                            <div style="font-size: 0.72rem; color: #64748B;">{cor['hex']}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c_del:
+                    if st.button("✕", key=f"del_cor_{idx}_{st.session_state.evento_id}", help=f"Remover {cor.get('nome') or cor['hex']}", use_container_width=True):
+                        shared.remover_cor_paleta(st.session_state.evento_id, idx)
+                        st.rerun()
+    else:
+        st.info("💡 Nenhuma cor adicionada à paleta ainda. Escolha uma cor abaixo ou selecione sugestões rápidas!")
+
+    # Controles para adicionar nova cor
+    col_pick, col_nome, col_btn = st.columns([1.2, 2.5, 1.3])
+    with col_pick:
+        nova_cor = st.color_picker("Cor", value="#0F5257", key=f"picker_{st.session_state.evento_id}", help="Clique para abrir o seletor visual de cores")
+    with col_nome:
+        novo_nome = st.text_input("Nome / Rótulo da cor", placeholder="Ex: Verde Esmeralda, Dourado, Rosé...", key=f"nome_cor_{st.session_state.evento_id}")
+    with col_btn:
+        st.write("")
+        st.write("")
+        if st.button("➕ Adicionar", key=f"btn_add_cor_{st.session_state.evento_id}", use_container_width=True):
+            shared.adicionar_cor_paleta(st.session_state.evento_id, nova_cor, novo_nome)
+            st.rerun()
+
+    # Sugestões rápidas de casamento
+    with st.expander("✨ Sugestões de tons populares para casamentos", expanded=False):
+        SUGESTOES = [
+            ("Verde Esmeralda", "#0F5257"),
+            ("Dourado Suave", "#D4AF37"),
+            ("Branco Off-White", "#FDFBF7"),
+            ("Rosé Gold", "#B76E79"),
+            ("Terracota", "#C86446"),
+            ("Fendi / Nude", "#C5A880"),
+            ("Marsala Clássico", "#5B1E31"),
+            ("Azul Serenity", "#8EA8C3"),
+            ("Lavanda Suave", "#BDB2CF"),
+            ("Verde Oliva", "#556B2F"),
+        ]
+        sug_cols = st.columns(5)
+        for i, (s_nome, s_hex) in enumerate(SUGESTOES):
+            with sug_cols[i % 5]:
+                st.markdown(f"""
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <div style="width:14px; height:14px; border-radius:50%; background:{s_hex}; border:1px solid rgba(0,0,0,0.2);"></div>
+                    <span style="font-size:0.75rem; font-weight:600; color:#334155;">{s_nome}</span>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button("Adicionar", key=f"btn_sug_{i}_{st.session_state.evento_id}", use_container_width=True):
+                    shared.adicionar_cor_paleta(st.session_state.evento_id, s_hex, s_nome)
+                    st.rerun()
+
+    st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
+
     st.text_area(
         "Restrições alimentares / observações do buffet",
         value=briefing["alimentar"],
@@ -279,7 +363,25 @@ else:
         exib_conv = str(val_conv) if val_conv else ""
 
     shared.bf_field("Convidados estimados",      exib_conv)
-    shared.bf_field("Paleta de cores",           briefing["cores"])
+
+    # Exibição da paleta de cores no modo leitura
+    paleta = briefing.get("paleta_cores", [])
+    if paleta:
+        strips_html = "".join([f"<div style='flex: 1; height: 100%; background: {c['hex']};' title='{c.get('nome') or c['hex']} ({c['hex']})'></div>" for c in paleta])
+        st.markdown(f"""
+        <div style="margin-top: 10px; margin-bottom: 6px;">
+            <div class="bf-label">Paleta de cores principal</div>
+            <div style="display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin: 6px 0 8px 0; border: 1px solid #CBD5E1; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                {strips_html}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                {' '.join([f'''<div style="display:inline-flex; align-items:center; gap:6px; background:#fff; padding:4px 10px; border-radius:16px; border:1px solid #e2e8f0; font-size:0.8rem; font-weight:600; color:#1e293b;"><span style="width:14px; height:14px; border-radius:50%; background:{c['hex']}; border:1px solid rgba(0,0,0,0.2); display:inline-block;"></span>{c.get('nome') or c['hex']} <small style="color:#64748b; font-weight:normal;">({c['hex']})</small></div>''' for c in paleta])}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        shared.bf_field("Paleta de cores", briefing.get("cores", ""))
+
     shared.bf_field("Restrições alimentares",    briefing["alimentar"])
     shared.bf_field("Preferências musicais",     briefing["musica"])
     shared.bf_field("Observações gerais",        briefing["obs"])
