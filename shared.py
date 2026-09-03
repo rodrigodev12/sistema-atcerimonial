@@ -121,6 +121,7 @@ BRIEFING_DEFAULTS = {
     "convidados": 0,
     "cores": "",
     "paleta_cores": [],
+    "restricoes_selecionadas": [],
     "alimentar": "",
     "musica": "",
     "obs": "",
@@ -485,6 +486,36 @@ def remover_cor_paleta(ev_id: str, index: int) -> bool:
         return True
     return False
 
+def toggle_restricao_alimentar(ev_id: str, tag: str, key: str) -> None:
+    """Ativa ou desativa uma restrição alimentar comum no briefing."""
+    try:
+        if "dados" not in st.session_state or st.session_state.dados is None:
+            st.session_state.dados = carregar_dados()
+        dados = st.session_state.dados
+    except Exception:
+        dados = carregar_dados()
+
+    ev = dados["eventos"].get(ev_id)
+    if not ev:
+        return
+    if "briefing" not in ev:
+        ev["briefing"] = dict(BRIEFING_DEFAULTS)
+    if "restricoes_selecionadas" not in ev["briefing"]:
+        ev["briefing"]["restricoes_selecionadas"] = []
+
+    selecionadas = ev["briefing"]["restricoes_selecionadas"]
+    marcado = st.session_state.get(key, False)
+    if marcado and tag not in selecionadas:
+        selecionadas.append(tag)
+    elif not marcado and tag in selecionadas:
+        selecionadas.remove(tag)
+
+    salvar_dados(dados)
+    try:
+        st.toast("Restrições alimentares atualizadas!", icon="🍽️")
+    except Exception:
+        pass
+
 def get_ev(dados: dict, ev_id: str) -> dict:
     return dados["eventos"][ev_id]
 
@@ -545,6 +576,8 @@ def get_briefing(evento: dict) -> dict:
         bf["pinterest_link"] = ""
     if "paleta_cores" not in bf or not isinstance(bf["paleta_cores"], list):
         bf["paleta_cores"] = []
+    if "restricoes_selecionadas" not in bf or not isinstance(bf["restricoes_selecionadas"], list):
+        bf["restricoes_selecionadas"] = []
     return bf
 
 def bf_field(label: str, valor) -> None:

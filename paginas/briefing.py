@@ -299,11 +299,46 @@ if can_edit:
 
     st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # RESTRIÇÕES ALIMENTARES (CHECKBOXES RÁPIDAS + OBSERVAÇÕES DETALHADAS)
+    # ═══════════════════════════════════════════════════════════════════════════
+    st.markdown("""
+    <div style="margin-top: 14px; margin-bottom: 4px;">
+        <label style="font-size: 1.05rem; font-weight: 600; color: #0F172A; display: flex; align-items: center; gap: 8px;">
+            <span>🥗 Restrições Alimentares / Observações do Buffet</span>
+        </label>
+        <p style="font-size: 0.84rem; color: #64748B; margin: 2px 0 8px 0;">
+            Marque as opções mais comuns e utilize o campo abaixo para detalhar mesas, exceções ou nomes de convidados.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    restricoes_atuais = briefing.get("restricoes_selecionadas", [])
+    OPCOES_RESTRICOES = [
+        ("Vegano", "🥗 Vegano"),
+        ("Vegetariano", "🥬 Vegetariano"),
+        ("Celíaco (Sem Glúten)", "🌾 Celíaco (Sem Glúten)"),
+        ("Intolerante à Lactose", "🥛 Intolerante à Lactose"),
+    ]
+
+    col_ck1, col_ck2, col_ck3, col_ck4 = st.columns(4)
+    cols_ck = [col_ck1, col_ck2, col_ck3, col_ck4]
+
+    for idx, (tag, label) in enumerate(OPCOES_RESTRICOES):
+        with cols_ck[idx]:
+            st.checkbox(
+                label,
+                value=tag in restricoes_atuais,
+                key=f"ck_restricao_{idx}_{st.session_state.evento_id}",
+                on_change=shared.toggle_restricao_alimentar,
+                args=(st.session_state.evento_id, tag, f"ck_restricao_{idx}_{st.session_state.evento_id}")
+            )
+
     st.text_area(
-        "Restrições alimentares / observações do buffet",
+        "Observações detalhadas do buffet (mesas, quantidades, exceções)",
         value=briefing["alimentar"],
-        placeholder="Ex: 3 vegetarianos, 1 celíaco, sem glúten na mesa 5…",
-        height=70,
+        placeholder="Ex: 3 vegetarianos na mesa 2, 1 celíaco na mesa da família, sem frutos do mar no coquetel…",
+        height=75,
         key=f"bf_alimentar_{st.session_state.evento_id}",
         on_change=shared.update_briefing_field,
         args=(st.session_state.evento_id, "alimentar", f"bf_alimentar_{st.session_state.evento_id}")
@@ -382,7 +417,21 @@ else:
     else:
         shared.bf_field("Paleta de cores", briefing.get("cores", ""))
 
-    shared.bf_field("Restrições alimentares",    briefing["alimentar"])
+    # Exibição das restrições alimentares no modo leitura
+    restricoes_atuais = briefing.get("restricoes_selecionadas", [])
+    obs_alim = briefing.get("alimentar", "").strip()
+    
+    st.markdown("<div style='margin-top: 10px; margin-bottom: 4px;'><div class='bf-label'>Restrições alimentares / buffet</div></div>", unsafe_allow_html=True)
+    if restricoes_atuais:
+        chips_html = " ".join([f"<span style='display:inline-block; background:#FEF2F2; color:#991B1B; font-weight:600; font-size:0.78rem; padding:3px 10px; border-radius:12px; border:1px solid #FECACA; margin-right:6px; margin-bottom:4px;'>🥗 {r}</span>" for r in restricoes_atuais])
+        st.markdown(f"<div style='margin-bottom:6px;'>{chips_html}</div>", unsafe_allow_html=True)
+    
+    if obs_alim:
+        st.markdown(f"<div style='font-size:0.9rem; color:#334155; margin-bottom: 8px;'>{obs_alim}</div>", unsafe_allow_html=True)
+    elif not restricoes_atuais:
+        st.markdown("<em style='opacity:0.45; display:block; margin-bottom: 8px;'>Não informado</em>", unsafe_allow_html=True)
+
     shared.bf_field("Preferências musicais",     briefing["musica"])
     shared.bf_field("Observações gerais",        briefing["obs"])
+
 
