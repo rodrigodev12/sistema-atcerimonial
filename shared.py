@@ -7,6 +7,9 @@ import io
 import random
 import string
 import secrets
+import base64
+import hashlib
+from PIL import Image, ImageOps
 from supabase import create_client, Client
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -112,8 +115,14 @@ ROTEIRO_PADRAO = [
 ]
 
 BRIEFING_DEFAULTS = {
-    "estilo": "", "convidados": "", "cores": "",
-    "alimentar": "", "musica": "", "obs": "",
+    "estilo": "",
+    "referencias_visuais": [],
+    "pinterest_link": "",
+    "convidados": "",
+    "cores": "",
+    "alimentar": "",
+    "musica": "",
+    "obs": "",
 }
 
 LARGURAS_PADRAO = {
@@ -306,6 +315,113 @@ def update_briefing_field(ev_id: str, field_name: str, key: str) -> None:
         salvar_dados(st.session_state.dados)
         st.toast("Briefing atualizado!", icon="📝")
 
+def processar_imagem_referencia(arquivo, max_dim: int = 1400, qualidade: int = 80) -> dict:
+    """Processa e otimiza um arquivo de imagem para armazenar de forma compacta (base64 Data URI)."""
+    raw_bytes = arquivo.read()
+    arquivo.seek(0)
+    file_hash = hashlib.md5(raw_bytes).hexdigest()
+    nome_original = arquivo.name
+
+    try:
+        img = Image.open(io.BytesIO(raw_bytes))
+        img = ImageOps.exif_transpose(img)
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+            
+        w, h = img.size
+        if w > max_dim or h > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+            
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=qualidade, optimize=True)
+        img_bytes = buf.getvalue()
+        b64_str = base64.b64encode(img_bytes).decode("utf-8")
+        data_url = f"data:image/jpeg;base64,{b64_str}"
+        
+        return {
+            "id": secrets.token_hex(6),
+            "nome": nome_original,
+            "hash": file_hash,
+            "data_url": data_url,
+            "tamanho": len(img_bytes),
+            "largura": img.size[0],
+            "altura": img.size[1],
+            "legenda": "",
+        }
+    except Exception:
+        b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+        mime = getattr(arquivo, "type", "image/jpeg") or "image/jpeg"
+        return {
+            "id": secrets.token_hex(6),
+            "nome": nome_original,
+            "hash": file_hash,
+            "data_url": f"data:{mime};base64,{b64_str}",
+            "tamanho": len(raw_bytes),
+            "largura": 0,
+            "altura": 0,
+            "legenda": "",
+        }
+
+def adicionar_referencias_visuais(ev_id: str, arquivos: list) -> int:
+    """Processa e adiciona novas referências visuais ao evento. Retorna a quantidade adicionada."""
+    if "dados" not in st.session_state or st.session_state.dados is None:
+        st.session_state.dados = carregar_dados()
+        
+    ev = st.session_state.dados["eventos"].get(ev_id)
+    if not ev:
+        return 0
+        
+    if "briefing" not in ev:
+        ev["briefing"] = dict(BRIEFING_DEFAULTS)
+    if "referencias_visuais" not in ev["briefing"]:
+        ev["briefing"]["referencias_visuais"] = []
+        
+    existentes_hashes = {r.get("hash") for r in ev["briefing"]["referencias_visuais"] if r.get("hash")}
+    
+    adicionados = 0
+    for arq in arquivos:
+        ref = processar_imagem_referencia(arq)
+        if ref["hash"] not in existentes_hashes:
+            ev["briefing"]["referencias_visuais"].append(ref)
+            existentes_hashes.add(ref["hash"])
+            adicionados += 1
+            
+    if adicionados > 0:
+        salvar_dados(st.session_state.dados)
+    return adicionados
+
+def remover_referencia_visual(ev_id: str, ref_id: str) -> bool:
+    """Remove uma referência visual pelo seu id."""
+    if "dados" not in st.session_state or st.session_state.dados is None:
+        st.session_state.dados = carregar_dados()
+        
+    ev = st.session_state.dados["eventos"].get(ev_id)
+    if not ev or "briefing" not in ev or "referencias_visuais" not in ev["briefing"]:
+        return False
+        
+    refs = ev["briefing"]["referencias_visuais"]
+    novas_refs = [r for r in refs if r.get("id") != ref_id]
+    if len(novas_refs) != len(refs):
+        ev["briefing"]["referencias_visuais"] = novas_refs
+        salvar_dados(st.session_state.dados)
+        return True
+    return False
+
+def atualizar_legenda_referencia(ev_id: str, ref_id: str, legenda: str) -> None:
+    """Atualiza a legenda/nota de uma referência específica."""
+    if "dados" not in st.session_state or st.session_state.dados is None:
+        st.session_state.dados = carregar_dados()
+        
+    ev = st.session_state.dados["eventos"].get(ev_id)
+    if ev and "briefing" in ev and "referencias_visuais" in ev["briefing"]:
+        for r in ev["briefing"]["referencias_visuais"]:
+            if r.get("id") == ref_id:
+                r["legenda"] = legenda
+                salvar_dados(st.session_state.dados)
+                break
+
 def get_ev(dados: dict, ev_id: str) -> dict:
     return dados["eventos"][ev_id]
 
@@ -359,7 +475,12 @@ def get_checklist_noivos(evento: dict) -> list:
     return evento.get("checklist_noivos", [])
 
 def get_briefing(evento: dict) -> dict:
-    return {**BRIEFING_DEFAULTS, **evento.get("briefing", {})}
+    bf = {**BRIEFING_DEFAULTS, **evento.get("briefing", {})}
+    if "referencias_visuais" not in bf or not isinstance(bf["referencias_visuais"], list):
+        bf["referencias_visuais"] = []
+    if "pinterest_link" not in bf:
+        bf["pinterest_link"] = ""
+    return bf
 
 def bf_field(label: str, valor) -> None:
     val_str = str(valor) if pd.notna(valor) and valor is not None else ""
