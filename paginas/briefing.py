@@ -16,20 +16,12 @@ is_concluido = status_atual == "Concluído"
 status_label = "✅ Briefing Concluído" if is_concluido else "📝 Em Preenchimento"
 status_style = "background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;" if is_concluido else "background:#FEF3C7; color:#B45309; border:1px solid #FDE68A;"
 
-col_h_tit, col_h_btn = st.columns([3, 1.2])
-with col_h_tit:
-    st.markdown(f"""
-    <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px; margin-bottom: 8px;">
-        <h3 style="margin: 0; padding: 0;">Briefing Inicial — {evento_atual['noivos']}</h3>
-        <span style="font-size: 0.76rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; {status_style}">{status_label}</span>
-    </div>
-    """, unsafe_allow_html=True)
-with col_h_btn:
-    if can_edit:
-        st.write("")
-        if st.button("💾 Salvar Rascunho", key=f"btn_salvar_topo_{st.session_state.evento_id}", use_container_width=True):
-            shared.salvar_briefing_completo(st.session_state.evento_id, status="Rascunho")
-            st.rerun()
+st.markdown(f"""
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 4px; margin-bottom: 12px;">
+    <h3 style="margin: 0; padding: 0;">Briefing Inicial — {evento_atual['noivos']}</h3>
+    <span style="font-size: 0.76rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; {status_style}">{status_label}</span>
+</div>
+""", unsafe_allow_html=True)
 
 # Dialog para visualização de imagem em alta definição
 if hasattr(st, "dialog"):
