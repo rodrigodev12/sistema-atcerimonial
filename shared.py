@@ -4,6 +4,7 @@ import pandas as pd
 import json
 import os
 import io
+import re
 import random
 import string
 import secrets
@@ -155,6 +156,7 @@ BRIEFING_DEFAULTS = {
     "referencias_visuais": [],
     "pinterest_link": "",
     "convidados": 0,
+    "lista_convidados": [],
     "cores": "",
     "paleta_cores": [],
     "restricoes_selecionadas": [],
@@ -585,6 +587,9 @@ def salvar_briefing_completo(ev_id: str, status: str = "Rascunho") -> bool:
         if hasattr(st, "session_state") and ss_key in st.session_state:
             bf[campo] = st.session_state[ss_key]
 
+    if hasattr(st, "session_state") and f"bf_lista_convidados_{ev_id}" in st.session_state:
+        bf["lista_convidados"] = st.session_state[f"bf_lista_convidados_{ev_id}"]
+
     bf["status"] = status
     if status == "Concluído":
         try:
@@ -668,11 +673,123 @@ def get_briefing(evento: dict) -> dict:
         bf["paleta_cores"] = []
     if "restricoes_selecionadas" not in bf or not isinstance(bf["restricoes_selecionadas"], list):
         bf["restricoes_selecionadas"] = []
+    if "lista_convidados" not in bf or not isinstance(bf["lista_convidados"], list):
+        bf["lista_convidados"] = []
     if "status" not in bf:
         bf["status"] = "Rascunho"
     if "finalizado_em" not in bf:
         bf["finalizado_em"] = ""
     return bf
+
+def formatar_telefone(raw: str) -> str:
+    """Formata sequências numéricas em formatos telefônicos legíveis do Brasil."""
+    if not raw:
+        return ""
+    nums = re.sub(r'\D', '', str(raw))
+    if nums.startswith('55') and len(nums) in (12, 13):
+        nums = nums[2:]
+    if len(nums) == 11:
+        return f"({nums[:2]}) {nums[2:7]}-{nums[7:]}"
+    elif len(nums) == 10:
+        return f"({nums[:2]}) {nums[2:6]}-{nums[6:]}"
+    elif len(nums) == 9:
+        return f"{nums[:5]}-{nums[5:]}"
+    elif len(nums) == 8:
+        return f"{nums[:4]}-{nums[4:]}"
+    return str(raw).strip()
+
+def parse_convidados_texto(texto: str) -> list:
+    """Analisa um texto bruto (copiado de WhatsApp, bloco de notas, Word, etc.)
+    e extrai automaticamente:
+    - Nome do convidado
+    - Contato/telefone identificado e formatado
+    - Discriminação de categoria: 'Adulto' ou 'Criança'
+    """
+    if not texto:
+        return []
+
+    linhas = str(texto).strip().splitlines()
+    resultado = []
+
+    padrao_tel = re.compile(
+        r'(?:(?:tel|cel|whatsapp|zap|contato|fone)[\s:]*)?'
+        r'(\+?55\s*)?(?:\(?\s*\d{2}\s*\)?[\s.-]*)?'
+        r'(?:9\s*)?\d{4}[\s.-]?\d{4}',
+        re.IGNORECASE
+    )
+
+    padrao_crianca = re.compile(
+        r'\b(?:crian[çc]a|crian[çc]as|infantil|filh[oa]|filh[oa]s|kids?|beb[eê]|beb[eê]s|baby|menor|menores)\b',
+        re.IGNORECASE
+    )
+    padrao_idade_crianca = re.compile(r'\b([0-9]{1,2})\s*(?:anos|ano|mês|meses)\b', re.IGNORECASE)
+    padrao_adulto = re.compile(r'\b(?:adult[oa]|adult[oa]s|maior|maiores)\b', re.IGNORECASE)
+    padrao_marcador = re.compile(r'^\s*(?:\d+[\.\)\-:]|\*|\-|\•)\s*')
+
+    for l in linhas:
+        l = l.strip()
+        if not l:
+            continue
+
+        # Remove marcadores de lista como '1.', '-', '•'
+        l_clean = padrao_marcador.sub('', l).strip()
+
+        # Discriminação: Criança vs Adulto
+        cat = "Adulto"
+        if padrao_crianca.search(l_clean):
+            cat = "Criança"
+        else:
+            m_idade = padrao_idade_crianca.search(l_clean)
+            if m_idade:
+                try:
+                    idade = int(m_idade.group(1))
+                    if idade <= 12:
+                        cat = "Criança"
+                except Exception:
+                    pass
+            elif padrao_adulto.search(l_clean):
+                cat = "Adulto"
+
+        # Extração de contato / telefone
+        m_tel = padrao_tel.search(l_clean)
+        contato = ""
+        if m_tel:
+            raw_tel = m_tel.group(0)
+            contato = formatar_telefone(raw_tel)
+            l_clean = l_clean[:m_tel.start()] + ' ' + l_clean[m_tel.end():]
+
+        # Limpeza do nome do convidado
+        l_clean = padrao_crianca.sub('', l_clean)
+        l_clean = padrao_idade_crianca.sub('', l_clean)
+        l_clean = padrao_adulto.sub('', l_clean)
+        l_clean = re.sub(r'\b(?:tel|cel|whatsapp|zap|contato|fone)[\s:]*', '', l_clean, flags=re.IGNORECASE)
+        l_clean = re.sub(r'[\(\)\[\]]', ' ', l_clean)
+        l_clean = re.sub(r'[\t;,|]', ' ', l_clean)
+        l_clean = re.sub(r'\s*-\s*', ' ', l_clean)
+        l_clean = re.sub(r'\s+', ' ', l_clean).strip(' -–—,;:|')
+
+        nome = l_clean.strip()
+        if nome:
+            resultado.append({
+                "id": secrets.token_hex(4),
+                "nome": nome,
+                "contato": contato,
+                "categoria": cat
+            })
+
+    return resultado
+
+def salvar_lista_convidados(ev_id: str, lista: list) -> None:
+    """Atualiza a lista de convidados do evento no banco e no session_state."""
+    if "dados" not in st.session_state or st.session_state.dados is None:
+        st.session_state.dados = carregar_dados()
+    ev = st.session_state.dados["eventos"].get(ev_id)
+    if ev:
+        if "briefing" not in ev:
+            ev["briefing"] = dict(BRIEFING_DEFAULTS)
+        ev["briefing"]["lista_convidados"] = lista
+        st.session_state[f"bf_lista_convidados_{ev_id}"] = lista
+        salvar_dados(st.session_state.dados)
 
 def bf_field(label: str, valor) -> None:
     val_str = str(valor) if pd.notna(valor) and valor is not None else ""

@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import secrets
 import shared
 
 evento_atual = shared.get_evento_atual()
@@ -357,6 +359,285 @@ if can_edit:
 
         st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
+        # ───────────────────────────────────────────────────────────────────────
+        # LISTA NOMINAL DE CONVIDADOS COM AUTOMAÇÃO E DISCRIMINAÇÃO ADULTO / CRIANÇA
+        # ───────────────────────────────────────────────────────────────────────
+        ev_id = st.session_state.evento_id
+        lista_key = f"bf_lista_convidados_{ev_id}"
+        if lista_key not in st.session_state:
+            st.session_state[lista_key] = list(briefing.get("lista_convidados", []))
+        lista_convidados = st.session_state[lista_key]
+
+        st.markdown("""
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; margin: 10px 0 14px 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <label style="font-size: 1.02rem; font-weight: 700; color: #0F172A; display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <span>📋 Lista Nominal de Convidados</span>
+                    <span style="font-size: 0.72rem; font-weight: 600; background: #EEF2FF; color: #4338CA; padding: 2px 8px; border-radius: 10px; border: 1px solid #C7D2FE;">✨ Automação Inteligente</span>
+                </label>
+            </div>
+            <p style="font-size: 0.83rem; color: #64748B; margin: 4px 0 0 0;">
+                Preencha a lista ou cole do WhatsApp/Notas. A automação identifica nome, telefone/contato e discrimina automaticamente quem é <b>Adulto</b> e quem é <b>Criança</b>.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        tot_lista = len(lista_convidados)
+        tot_adultos = sum(1 for c in lista_convidados if c.get("categoria") == "Adulto")
+        tot_criancas = sum(1 for c in lista_convidados if c.get("categoria") == "Criança")
+
+        cm1, cm2, cm3, cm4 = st.columns([1.1, 1.1, 1.1, 1.7])
+        with cm1:
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                <div style="font-size: 0.7rem; color: #64748B; font-weight: 600; text-transform: uppercase;">👥 Total Lista</div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: #0F172A;">{tot_lista}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with cm2:
+            st.markdown(f"""
+            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 8px; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                <div style="font-size: 0.7rem; color: #166534; font-weight: 600; text-transform: uppercase;">🧑 Adultos</div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: #15803D;">{tot_adultos}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with cm3:
+            st.markdown(f"""
+            <div style="background: #FEF9C3; border: 1px solid #FEF08A; border-radius: 8px; padding: 8px; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                <div style="font-size: 0.7rem; color: #854D0E; font-weight: 600; text-transform: uppercase;">🧒 Crianças</div>
+                <div style="font-size: 1.3rem; font-weight: 800; color: #A16207;">{tot_criancas}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with cm4:
+            if tot_lista > 0 and tot_lista != convidados_val:
+                st.markdown("<div style='height: 2px;'></div>", unsafe_allow_html=True)
+                if st.button(f"🔄 Sincronizar estimativa ({tot_lista})", key=f"btn_sync_est_{ev_id}", help="Copia o total da lista nominal para o campo 'Número estimado de convidados'", use_container_width=True):
+                    st.session_state[f"bf_convidados_{ev_id}"] = tot_lista
+                    shared.update_briefing_field(ev_id, "convidados", f"bf_convidados_{ev_id}")
+                    st.toast(f"Estimativa atualizada para {tot_lista} convidados!", icon="👥")
+                    st.rerun()
+            elif tot_lista > 0:
+                st.markdown("""
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.78rem; color: #15803D; font-weight: 600;">✅ Total sincronizado com estimativa</span>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 0.76rem; color: #64748B;">Lista vazia no momento</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+
+        tab_auto, tab_manual, tab_arquivo = st.tabs([
+            "✨ Automação Inteligente (Colar Texto)",
+            "➕ Adicionar Convidado Individual",
+            "📂 Importar Planilha (CSV / Excel)"
+        ])
+
+        with tab_auto:
+            st.markdown("""
+            <p style="font-size: 0.82rem; color: #475569; margin: 4px 0 6px 0;">
+                Cole abaixo a lista bruta como você tiver. A automação extrai <b>nomes</b>, <b>telefones com DDD</b> e categoriza automaticamente palavras como <i>criança</i>, <i>filho(a)</i>, <i>bebê</i> ou <i>adulto</i>.
+            </p>
+            """, unsafe_allow_html=True)
+            
+            texto_colado = st.text_area(
+                "Cole sua lista de convidados aqui:",
+                placeholder="Exemplos aceitos em qualquer formato:\n1. Carlos Alberto - (27) 99999-1122 - Adulto\n2. Maria Clara (27 98888-5555) - Criança\n3. Davi Lucca (filho) - 27 99999-0000\n4. Pedro Santos - Criança\n5. Mariana Silva - 27991112233\n6. Ana Beatriz (adulto)",
+                height=130,
+                key=f"txt_import_guests_{ev_id}"
+            )
+            
+            c_opt1, c_opt2 = st.columns([1.5, 1])
+            with c_opt1:
+                modo_imp = st.radio("Ação ao processar:", ["Adicionar à lista existente", "Substituir lista inteira"], horizontal=True, key=f"modo_import_{ev_id}")
+            with c_opt2:
+                sync_auto = st.checkbox("Atualizar 'Número estimado de convidados'", value=True, key=f"sync_auto_ck_{ev_id}")
+
+            if st.button("🪄 Processar e Preencher Lista com Automação", type="primary", key=f"btn_processar_convidados_{ev_id}", use_container_width=True):
+                if texto_colado.strip():
+                    novos = shared.parse_convidados_texto(texto_colado)
+                    if novos:
+                        if modo_imp == "Adicionar à lista existente":
+                            lista_final = lista_convidados + novos
+                        else:
+                            lista_final = novos
+                        
+                        shared.salvar_lista_convidados(ev_id, lista_final)
+                        if sync_auto:
+                            st.session_state[f"bf_convidados_{ev_id}"] = len(lista_final)
+                            shared.update_briefing_field(ev_id, "convidados", f"bf_convidados_{ev_id}")
+                        
+                        n_ad = sum(1 for c in novos if c.get("categoria") == "Adulto")
+                        n_cr = sum(1 for c in novos if c.get("categoria") == "Criança")
+                        st.toast(f"✅ {len(novos)} convidados identificados ({n_ad} adultos e {n_cr} crianças)!", icon="🎉")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Não foi possível identificar convidados no texto digitado.")
+                else:
+                    st.warning("Por favor, cole um texto com nomes de convidados antes de processar.")
+
+        with tab_manual:
+            c_in1, c_in2, c_in3 = st.columns([2, 1.4, 1.2])
+            with c_in1:
+                man_nome = st.text_input("Nome do Convidado *", placeholder="Ex: Juliana Moreira", key=f"man_nome_{ev_id}")
+            with c_in2:
+                man_contato = st.text_input("Contato / Telefone", placeholder="Ex: (27) 99888-1234", key=f"man_contato_{ev_id}")
+            with c_in3:
+                man_cat = st.selectbox("Classificação", ["Adulto", "Criança"], key=f"man_cat_{ev_id}")
+            
+            if st.button("➕ Inserir Convidado", type="secondary", key=f"btn_add_man_{ev_id}"):
+                if man_nome.strip():
+                    item = {
+                        "id": secrets.token_hex(4),
+                        "nome": man_nome.strip(),
+                        "contato": shared.formatar_telefone(man_contato),
+                        "categoria": man_cat
+                    }
+                    lista_final = lista_convidados + [item]
+                    shared.salvar_lista_convidados(ev_id, lista_final)
+                    st.toast(f"Convidado {man_nome.strip()} inserido!", icon="✅")
+                    st.rerun()
+                else:
+                    st.warning("Informe o nome do convidado.")
+
+        with tab_arquivo:
+            st.markdown("""
+            <p style="font-size: 0.82rem; color: #475569; margin: 4px 0 6px 0;">
+                Envie uma planilha com colunas como <b>Nome</b>, <b>Telefone/Contato</b> e <b>Categoria/Tipo</b>.
+            </p>
+            """, unsafe_allow_html=True)
+            arq_up = st.file_uploader("Selecione o arquivo CSV ou Excel", type=["csv", "xlsx", "xls"], key=f"up_arq_guests_{ev_id}")
+            if arq_up is not None:
+                try:
+                    if arq_up.name.endswith(".csv"):
+                        try:
+                            df_up = pd.read_csv(arq_up, encoding="utf-8")
+                        except Exception:
+                            arq_up.seek(0)
+                            df_up = pd.read_csv(arq_up, encoding="latin1", sep=";")
+                    else:
+                        df_up = pd.read_excel(arq_up)
+                    
+                    st.caption(f"Arquivo lido com sucesso: {len(df_up)} linhas encontradas.")
+                    
+                    col_nome_match = next((c for c in df_up.columns if any(k in str(c).lower() for k in ["nome", "convidado", "name"])), df_up.columns[0] if len(df_up.columns) > 0 else None)
+                    col_tel_match = next((c for c in df_up.columns if any(k in str(c).lower() for k in ["tel", "cel", "contato", "fone", "whatsapp"])), None)
+                    col_cat_match = next((c for c in df_up.columns if any(k in str(c).lower() for k in ["cat", "tipo", "faixa", "idade", "class"])), None)
+                    
+                    c_up1, c_up2, c_up3 = st.columns(3)
+                    with c_up1:
+                        sel_col_nome = st.selectbox("Coluna do Nome:", list(df_up.columns), index=list(df_up.columns).index(col_nome_match) if col_nome_match in df_up.columns else 0)
+                    with c_up2:
+                        sel_col_tel = st.selectbox("Coluna do Contato:", ["(Nenhuma)"] + list(df_up.columns), index=list(df_up.columns).index(col_tel_match) + 1 if col_tel_match in df_up.columns else 0)
+                    with c_up3:
+                        sel_col_cat = st.selectbox("Coluna Adulto/Criança:", ["(Nenhuma)"] + list(df_up.columns), index=list(df_up.columns).index(col_cat_match) + 1 if col_cat_match in df_up.columns else 0)
+                    
+                    if st.button("📥 Importar Dados da Planilha", type="primary", key=f"btn_import_file_exec_{ev_id}"):
+                        novos_arq = []
+                        for _, row in df_up.iterrows():
+                            val_nome = str(row[sel_col_nome] or "").strip()
+                            if not val_nome or val_nome.lower() == "nan":
+                                continue
+                            val_tel = ""
+                            if sel_col_tel != "(Nenhuma)":
+                                val_tel = shared.formatar_telefone(str(row[sel_col_tel] or ""))
+                            val_cat = "Adulto"
+                            if sel_col_cat != "(Nenhuma)":
+                                cat_txt = str(row[sel_col_cat] or "").lower()
+                                if any(k in cat_txt for k in ["crian", "infantil", "kid", "filh", "beb"]):
+                                    val_cat = "Criança"
+                            novos_arq.append({
+                                "id": secrets.token_hex(4),
+                                "nome": val_nome,
+                                "contato": val_tel,
+                                "categoria": val_cat
+                            })
+                        if novos_arq:
+                            lista_final = lista_convidados + novos_arq
+                            shared.salvar_lista_convidados(ev_id, lista_final)
+                            st.toast(f"✅ {len(novos_arq)} convidados importados da planilha!", icon="🎉")
+                            st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao processar planilha: {e}")
+
+        st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+
+        # TABELA INTERATIVA DE CONVIDADOS
+        if lista_convidados:
+            st.markdown("<div style='font-size: 0.92rem; font-weight: 600; color: #1E293B; margin-bottom: 6px;'>Tabela de Convidados Cadastrados</div>", unsafe_allow_html=True)
+            df_display = pd.DataFrame([
+                {
+                    "ID": c.get("id", str(idx)),
+                    "Nome": c.get("nome", ""),
+                    "Contato": c.get("contato", ""),
+                    "Categoria": "Criança" if str(c.get("categoria", "")).strip() == "Criança" else "Adulto"
+                }
+                for idx, c in enumerate(lista_convidados)
+            ])
+
+            edited_df = st.data_editor(
+                df_display,
+                use_container_width=True,
+                num_rows="dynamic",
+                hide_index=True,
+                column_config={
+                    "ID": None,
+                    "Nome": st.column_config.TextColumn("👤 Nome do Convidado", required=True),
+                    "Contato": st.column_config.TextColumn("📞 Contato / Telefone"),
+                    "Categoria": st.column_config.SelectboxColumn(
+                        "🏷️ Classificação",
+                        options=["Adulto", "Criança"],
+                        required=True,
+                        default="Adulto"
+                    ),
+                },
+                key=f"editor_convidados_{ev_id}"
+            )
+
+            ca1, ca2, ca3 = st.columns([1.5, 1.2, 1.2])
+            with ca1:
+                if st.button("💾 Salvar Alterações da Tabela", key=f"btn_save_tbl_{ev_id}", use_container_width=True):
+                    itens_atualizados = []
+                    for r in edited_df.to_dict("records"):
+                        nm = str(r.get("Nome") or "").strip()
+                        if nm and nm.lower() != "nan":
+                            itens_atualizados.append({
+                                "id": str(r.get("ID") or secrets.token_hex(4)),
+                                "nome": nm,
+                                "contato": shared.formatar_telefone(str(r.get("Contato") or "")),
+                                "categoria": "Criança" if str(r.get("Categoria") or "").strip() == "Criança" else "Adulto"
+                            })
+                    shared.salvar_lista_convidados(ev_id, itens_atualizados)
+                    st.toast("Tabela de convidados salva com sucesso!", icon="✅")
+                    st.rerun()
+
+            with ca2:
+                csv_bytes = edited_df[["Nome", "Contato", "Categoria"]].to_csv(index=False).encode('utf-8-sig')
+                st.download_button(
+                    "📥 Baixar Lista (CSV)",
+                    data=csv_bytes,
+                    file_name=f"convidados_{ev_id}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                    key=f"dl_csv_btn_{ev_id}"
+                )
+
+            with ca3:
+                with st.popover("🗑️ Limpar Lista", use_container_width=True):
+                    st.write("Tem certeza que deseja apagar todos os convidados desta lista?")
+                    if st.button("Sim, apagar toda a lista", type="primary", key=f"confirm_del_all_{ev_id}", use_container_width=True):
+                        shared.salvar_lista_convidados(ev_id, [])
+                        st.toast("Lista limpa com sucesso!", icon="🗑️")
+                        st.rerun()
+        else:
+            st.info("💡 A lista nominal está vazia. Cole sua lista de convidados ou insira o primeiro nome acima para começar!")
+
+        st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
+
         st.text_area(
             "Observações gerais e logística do evento",
             value=briefing["obs"],
@@ -375,10 +656,34 @@ if can_edit:
                 st.rerun()
         with col_b2:
             if st.button("💾 Salvar Rascunho", key=f"btn_save_p2_{st.session_state.evento_id}", use_container_width=True):
+                if lista_convidados and "edited_df" in locals():
+                    itens_atualizados = []
+                    for r in edited_df.to_dict("records"):
+                        nm = str(r.get("Nome") or "").strip()
+                        if nm and nm.lower() != "nan":
+                            itens_atualizados.append({
+                                "id": str(r.get("ID") or secrets.token_hex(4)),
+                                "nome": nm,
+                                "contato": shared.formatar_telefone(str(r.get("Contato") or "")),
+                                "categoria": "Criança" if str(r.get("Categoria") or "").strip() == "Criança" else "Adulto"
+                            })
+                    shared.salvar_lista_convidados(ev_id, itens_atualizados)
                 shared.salvar_briefing_completo(st.session_state.evento_id, status="Rascunho")
                 st.rerun()
         with col_b3:
             if st.button("Avançar para Passo 3: Buffet e Música ➡️", type="primary", key=f"btn_next_p2_{st.session_state.evento_id}", use_container_width=True):
+                if lista_convidados and "edited_df" in locals():
+                    itens_atualizados = []
+                    for r in edited_df.to_dict("records"):
+                        nm = str(r.get("Nome") or "").strip()
+                        if nm and nm.lower() != "nan":
+                            itens_atualizados.append({
+                                "id": str(r.get("ID") or secrets.token_hex(4)),
+                                "nome": nm,
+                                "contato": shared.formatar_telefone(str(r.get("Contato") or "")),
+                                "categoria": "Criança" if str(r.get("Categoria") or "").strip() == "Criança" else "Adulto"
+                            })
+                    shared.salvar_lista_convidados(ev_id, itens_atualizados)
                 shared.salvar_briefing_completo(st.session_state.evento_id, status="Rascunho")
                 st.session_state[step_key] = 3
                 st.rerun()
@@ -534,6 +839,27 @@ else:
             exib_conv = str(val_conv) if val_conv else ""
 
         shared.bf_field("Convidados estimados", exib_conv)
+
+        lista_conv = briefing.get("lista_convidados", [])
+        if lista_conv:
+            tot_l = len(lista_conv)
+            tot_a = sum(1 for c in lista_conv if c.get("categoria") == "Adulto")
+            tot_c = sum(1 for c in lista_conv if c.get("categoria") == "Criança")
+            st.markdown(f"""
+            <div style="margin: 12px 0 6px 0;">
+                <div class="bf-label">Lista Nominal de Convidados ({tot_l} no total · {tot_a} adultos · {tot_c} crianças)</div>
+            </div>
+            """, unsafe_allow_html=True)
+            df_ro = pd.DataFrame([
+                {
+                    "Nome": c.get("nome", ""),
+                    "Contato": c.get("contato", ""),
+                    "Classificação": c.get("categoria", "Adulto")
+                }
+                for c in lista_conv
+            ])
+            st.dataframe(df_ro, use_container_width=True, hide_index=True)
+
         shared.bf_field("Observações gerais e logística", briefing["obs"])
 
         c_r1, c_r2 = st.columns(2)
