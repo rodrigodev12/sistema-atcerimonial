@@ -803,15 +803,20 @@ if st.session_state.get("logado") and st.session_state.get("tipo_usuario") == "c
 with st.sidebar:
     # --- Rodapé (Mostrado nativamente abaixo do st.navigation) ---
     if is_admin:
-        lista_ev = list(st.session_state.dados["eventos"].keys())
-        if st.session_state.sel_ev not in lista_ev:
+        lista_ev = shared.ordenar_eventos_por_proximidade(st.session_state.dados["eventos"])
+        if not lista_ev:
+            lista_ev = list(st.session_state.dados["eventos"].keys())
+
+        if "sel_ev" not in st.session_state or st.session_state.sel_ev not in lista_ev:
             st.session_state.sel_ev = lista_ev[0]
+
+        idx_sel = lista_ev.index(st.session_state.sel_ev) if st.session_state.sel_ev in lista_ev else 0
 
         st.session_state.evento_id = st.selectbox(
             "Evento Ativo",
             lista_ev,
-            index=lista_ev.index(st.session_state.sel_ev),
-            format_func=lambda x: st.session_state.dados["eventos"][x]["noivos"],
+            index=idx_sel,
+            format_func=lambda x: f"{st.session_state.dados['eventos'][x]['noivos']} ({st.session_state.dados['eventos'][x]['data']})" if st.session_state.dados['eventos'][x].get('data') else st.session_state.dados['eventos'][x]['noivos'],
             key="sb_ev",
         )
         st.session_state.sel_ev = st.session_state.evento_id
@@ -958,7 +963,7 @@ with st.sidebar:
                 ev_del = st.selectbox(
                     "Evento para excluir",
                     lista_ev,
-                    format_func=lambda x: st.session_state.dados["eventos"][x]["noivos"],
+                    format_func=lambda x: f"{st.session_state.dados['eventos'][x]['noivos']} ({st.session_state.dados['eventos'][x]['data']})" if st.session_state.dados['eventos'][x].get('data') else st.session_state.dados['eventos'][x]['noivos'],
                     key="sb_del",
                 )
                 confirm_del = st.checkbox("Confirmo a exclusão permanente", key="ck_del")

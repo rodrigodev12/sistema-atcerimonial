@@ -642,6 +642,60 @@ def salvar_briefing_completo(ev_id: str, status: str = "Rascunho") -> bool:
         
     return True
 
+def parse_data_evento(data_str):
+    """Converte strings de datas de eventos para objeto date, suportando múltiplos formatos."""
+    if not data_str:
+        return None
+    s = str(data_str).strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%y", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except Exception:
+            pass
+    dig = "".join(filter(str.isdigit, s))
+    if len(dig) == 8:
+        try:
+            return datetime(int(dig[4:]), int(dig[2:4]), int(dig[:2])).date()
+        except Exception:
+            pass
+    return None
+
+def ordenar_eventos_por_proximidade(eventos_dict: dict) -> list:
+    """Retorna as chaves dos eventos ordenadas pela proximidade da data em relação a hoje:
+    1. Eventos futuros mais próximos (de hoje em diante, em ordem cronológica crescente)
+    2. Eventos passados (dos mais recentes aos mais antigos)
+    3. Eventos sem data válida (ao final)
+    """
+    if not eventos_dict:
+        return []
+
+    try:
+        from zoneinfo import ZoneInfo
+        fuso = ZoneInfo("America/Sao_Paulo")
+        hoje = datetime.now(fuso).date()
+    except Exception:
+        try:
+            import pytz
+            hoje = datetime.now(pytz.timezone("America/Sao_Paulo")).date()
+        except Exception:
+            hoje = datetime.now().date()
+
+    def chave_proximidade(ev_id):
+        ev = eventos_dict.get(ev_id, {})
+        dt = parse_data_evento(ev.get("data"))
+        if dt is None:
+            return (2, 999999, str(ev.get("noivos", "")))
+        
+        diff = (dt - hoje).days
+        if diff >= 0:
+            # Futuros: mais próximos primeiro (diff = 0, 1, 2, ...)
+            return (0, diff, str(ev.get("noivos", "")))
+        else:
+            # Passados: mais recentes primeiro (abs(diff) = 1, 2, ...)
+            return (1, abs(diff), str(ev.get("noivos", "")))
+
+    return sorted(eventos_dict.keys(), key=chave_proximidade)
+
 def get_ev(dados: dict, ev_id: str) -> dict:
     return dados["eventos"][ev_id]
 
