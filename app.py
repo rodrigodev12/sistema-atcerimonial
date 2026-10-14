@@ -917,6 +917,34 @@ with st.sidebar:
 
         # --- Seções Extras do Administrador ---
         st.markdown("<hr style='opacity:.15; margin:14px 0;'>", unsafe_allow_html=True)
+        with st.expander("✏️ Editar Título do Evento"):
+            ev_edit_id = st.selectbox(
+                "Selecione o evento para editar:",
+                lista_ev,
+                index=lista_ev.index(st.session_state.evento_id) if st.session_state.evento_id in lista_ev else 0,
+                format_func=lambda x: f"{st.session_state.dados['eventos'][x]['noivos']} ({st.session_state.dados['eventos'][x]['data']})" if st.session_state.dados['eventos'][x].get('data') else st.session_state.dados['eventos'][x]['noivos'],
+                key="sb_edit_ev_select"
+            )
+            ev_obj = st.session_state.dados["eventos"][ev_edit_id]
+            with st.form(f"form_editar_ev_{ev_edit_id}"):
+                novo_nome = st.text_input("Título do Evento (Noivos / Anfitrião)", value=ev_obj.get("noivos", ""))
+                nova_dt = st.text_input("Data do Evento", value=ev_obj.get("data", ""), placeholder="DD/MM/AAAA")
+                if st.form_submit_button("💾 Salvar Alterações", type="primary", use_container_width=True):
+                    if novo_nome.strip():
+                        ev_obj["noivos"] = novo_nome.strip()
+                        if nova_dt.strip():
+                            data_limpa = "".join(filter(str.isdigit, nova_dt))
+                            if len(data_limpa) == 8:
+                                nova_dt = f"{data_limpa[:2]}/{data_limpa[2:4]}/{data_limpa[4:]}"
+                            elif len(data_limpa) == 6:
+                                nova_dt = f"{data_limpa[:2]}/{data_limpa[2:4]}/20{data_limpa[4:]}"
+                            ev_obj["data"] = nova_dt.strip()
+                        shared.salvar_dados(st.session_state.dados)
+                        st.toast("✅ Evento atualizado com sucesso!", icon="🎉")
+                        st.rerun()
+                    else:
+                        st.warning("O título do evento não pode ficar vazio.")
+
         with st.expander("➕ Criar Novo Evento"):
             with st.form("form_criar_ev", clear_on_submit=True):
                 ne_noivos = st.text_input("Noivos", placeholder="Ex: Carla & Lucas")

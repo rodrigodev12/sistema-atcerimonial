@@ -7,7 +7,34 @@ if not evento_atual:
     st.info("Por favor, selecione ou acesse um evento válido.")
     st.stop()
 
-st.markdown(f"### Dashboard — {evento_atual['noivos']} &nbsp;·&nbsp; {shared.ICON_CALENDARIO}{evento_atual['data']}", unsafe_allow_html=True)
+is_admin = st.session_state.get("tipo_usuario") == "admin"
+
+c_dash_title, c_dash_btn = st.columns([4.2, 1.4])
+with c_dash_title:
+    st.markdown(f"### Dashboard — {evento_atual['noivos']} &nbsp;·&nbsp; {shared.ICON_CALENDARIO}{evento_atual['data']}", unsafe_allow_html=True)
+
+if is_admin:
+    with c_dash_btn:
+        with st.popover("✏️ Editar Título", use_container_width=True):
+            st.markdown("**Editar Título e Data do Evento**")
+            with st.form(f"form_dash_edit_ev_{st.session_state.evento_id}"):
+                dash_nome = st.text_input("Título / Noivos", value=evento_atual.get("noivos", ""))
+                dash_data = st.text_input("Data", value=evento_atual.get("data", ""), placeholder="DD/MM/AAAA")
+                if st.form_submit_button("💾 Salvar", type="primary", use_container_width=True):
+                    if dash_nome.strip():
+                        evento_atual["noivos"] = dash_nome.strip()
+                        if dash_data.strip():
+                            data_limpa = "".join(filter(str.isdigit, dash_data))
+                            if len(data_limpa) == 8:
+                                dash_data = f"{data_limpa[:2]}/{data_limpa[2:4]}/{data_limpa[4:]}"
+                            elif len(data_limpa) == 6:
+                                dash_data = f"{data_limpa[:2]}/{data_limpa[2:4]}/20{data_limpa[4:]}"
+                            evento_atual["data"] = dash_data.strip()
+                        shared.salvar_dados(st.session_state.dados)
+                        st.toast("✅ Título do evento atualizado com sucesso!", icon="🎉")
+                        st.rerun()
+                    else:
+                        st.warning("O título não pode ficar vazio.")
 
 # ⏳ Contagem Regressiva
 from datetime import datetime
