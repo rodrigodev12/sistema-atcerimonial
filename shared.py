@@ -406,6 +406,37 @@ def processar_imagem_referencia(arquivo, max_dim: int = 1400, qualidade: int = 8
             "legenda": "",
         }
 
+def processar_documento_fornecedor(arquivo, tipo: str = "Contrato") -> dict:
+    """Processa um arquivo de contrato, recibo ou comprovante e armazena com metadados e base64."""
+    raw_bytes = arquivo.read()
+    arquivo.seek(0)
+    file_hash = hashlib.md5(raw_bytes).hexdigest()
+    nome_original = arquivo.name
+    b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+    mime = getattr(arquivo, "type", "") or "application/octet-stream"
+    
+    return {
+        "id": secrets.token_hex(6),
+        "nome": nome_original,
+        "tipo": tipo,
+        "hash": file_hash,
+        "mime": mime,
+        "tamanho": len(raw_bytes),
+        "data_url": f"data:{mime};base64,{b64_str}",
+        "enviado_em": datetime.now().strftime("%d/%m/%Y"),
+    }
+
+def obter_bytes_documento(doc: dict) -> bytes:
+    """Extrai os bytes puros de um documento armazenado em data_url base64."""
+    data_url = doc.get("data_url", "")
+    if "," in data_url:
+        b64_part = data_url.split(",", 1)[1]
+        try:
+            return base64.b64decode(b64_part)
+        except Exception:
+            return b""
+    return b""
+
 def adicionar_referencias_visuais(ev_id: str, arquivos: list) -> int:
     """Processa e adiciona novas referências visuais ao evento. Retorna a quantidade adicionada."""
     if "dados" not in st.session_state or st.session_state.dados is None:
@@ -647,8 +678,14 @@ def obter_link_acesso(ev_id: str) -> str:
 
 def exportar_excel(evento: dict) -> bytes:
     buf = io.BytesIO()
+    forn_limpos = []
+    for f in evento.get("fornecedores", []):
+        f_copy = {k: v for k, v in f.items() if k not in ("fotos", "documentos")}
+        f_copy["FOTOS"] = len(f.get("fotos", []))
+        f_copy["DOCUMENTOS"] = len(f.get("documentos", []))
+        forn_limpos.append(f_copy)
     with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        pd.DataFrame(evento["fornecedores"]).to_excel(
+        pd.DataFrame(forn_limpos).to_excel(
             writer, sheet_name="Fornecedores", index=False
         )
         pd.DataFrame(evento.get("roteiro", ROTEIRO_PADRAO)).to_excel(

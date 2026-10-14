@@ -16,6 +16,49 @@ is_admin = st.session_state.tipo_usuario == "admin"
 
 st.markdown(f"### Alinhamento com Fornecedores — {evento_atual['noivos']}")
 
+# Dialog para visualização ampliada de fotos e documentos
+if hasattr(st, "dialog"):
+    @st.dialog("Visualizar Arquivo", width="large")
+    def modal_visualizar_arquivo(item_obj):
+        if "data_url" in item_obj and str(item_obj.get("data_url", "")).startswith("data:image"):
+            st.image(item_obj["data_url"], use_container_width=True)
+        st.markdown(f"**Arquivo:** `{item_obj.get('nome', '')}`")
+        if item_obj.get("tamanho"):
+            st.caption(f"Tamanho: {item_obj['tamanho'] // 1024} KB")
+        doc_bytes = shared.obter_bytes_documento(item_obj)
+        if doc_bytes:
+            st.download_button(
+                "⬇️ Baixar Arquivo",
+                data=doc_bytes,
+                file_name=item_obj.get("nome", "arquivo"),
+                mime=item_obj.get("mime", "application/octet-stream"),
+                key=f"modal_dl_{item_obj.get('id', 'temp')}"
+            )
+else:
+    def modal_visualizar_arquivo(item_obj):
+        if "data_url" in item_obj and str(item_obj.get("data_url", "")).startswith("data:image"):
+            st.image(item_obj["data_url"], use_container_width=True)
+
+st.markdown("""
+<style>
+.forn-card-foto {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 8px;
+    text-align: center;
+}
+.forn-card-foto img {
+    border-radius: 6px;
+    height: 140px;
+    width: 100%;
+    object-fit: cover;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Filtros
 cf1, cf2 = st.columns(2)
 with cf1:
@@ -89,8 +132,21 @@ for forn in df_view.to_dict("records"):
     except Exception:
         he_fmt = "R$ 0,00"
 
+    item_ref = fornecedores_dict.get(setor, forn)
+    fotos = item_ref.get("fotos", [])
+    documentos = item_ref.get("documentos", [])
+
+    qtd_fotos = len(fotos)
+    qtd_docs = len(documentos)
+    badges_extras = []
+    if qtd_fotos > 0:
+        badges_extras.append(f"📸 {qtd_fotos}")
+    if qtd_docs > 0:
+        badges_extras.append(f"📁 {qtd_docs}")
+    extra_str = f"  [{' · '.join(badges_extras)}]" if badges_extras else ""
+
     # Expandable header label
-    label = f"{cor['emoji']} {setor}" + (f" — {empresa}" if empresa else " — (Pendente)")
+    label = f"{cor['emoji']} {setor}" + (f" — {empresa}" if empresa else " — (Pendente)") + extra_str
     with st.expander(label, expanded=False):
         # Badge status display
         st.markdown(
@@ -101,67 +157,252 @@ for forn in df_view.to_dict("records"):
             unsafe_allow_html=True,
         )
 
-        if can_edit:
-            with st.form(key=f"form_forn_{setor}_{st.session_state.evento_id}"):
+        tab_dados, tab_fotos, tab_docs = st.tabs([
+            "📝 Dados & Contrato",
+            f"📸 Fotos do Trabalho ({qtd_fotos})",
+            f"📁 Pasta de Contrato & Recibos ({qtd_docs})"
+        ])
+
+        with tab_dados:
+            if can_edit:
+                with st.form(key=f"form_forn_{setor}_{st.session_state.evento_id}"):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        nova_empresa = st.text_input("🏢 Empresa",     value=empresa, key=f"emp_{setor}")
+                        novo_resp    = st.text_input("👤 Responsável", value=resp,    key=f"resp_{setor}")
+                        novo_tel     = st.text_input("📞 Cel/Tel",     value=tel,     key=f"tel_{setor}")
+                        novo_insta   = st.text_input("📸 Instagram",   value=insta,   key=f"ig_{setor}")
+                    with c2:
+                        novo_status = st.selectbox(
+                            "📌 Status", shared.STATUS_OPCOES,
+                            index=shared.STATUS_OPCOES.index(status) if status in shared.STATUS_OPCOES else 0,
+                            key=f"st_{setor}"
+                        )
+                        try:
+                            val_atual = float(forn.get("VALOR CONTRATO", 0) or 0)
+                        except (ValueError, TypeError):
+                            val_atual = 0.0
+                        novo_val = st.number_input(
+                            "💰 Valor Contrato (R$)", min_value=0.0, value=val_atual,
+                            format="%.2f", step=100.0, key=f"val_{setor}"
+                        )
+                        try:
+                            he_atual = float(forn.get("HORA EXTRA", 0) or 0)
+                        except (ValueError, TypeError):
+                            he_atual = 0.0
+                        nova_he = st.number_input(
+                            "⏱️ Hora Extra (R$)", min_value=0.0, value=he_atual,
+                            format="%.2f", step=50.0, key=f"he_{setor}"
+                        )
+                        nova_obs = st.text_area(
+                            "📝 Observação",
+                            value=forn.get("OBSERVAÇÃO", "") or "",
+                            height=80, key=f"obs_{setor}"
+                        )
+                    if st.form_submit_button("💾 Salvar Dados", type="primary", use_container_width=True):
+                        item = fornecedores_dict.get(setor, {})
+                        item["EMPRESA"]        = nova_empresa.strip()
+                        item["RESPONSÁVEL"]    = novo_resp.strip()
+                        item["CEL/TEL"]        = novo_tel.strip()
+                        item["INSTAGRAM"]      = novo_insta.strip()
+                        item["STATUS"]         = novo_status
+                        item["VALOR CONTRATO"] = float(novo_val)
+                        item["HORA EXTRA"]     = float(nova_he)
+                        item["OBSERVAÇÃO"]     = nova_obs.strip()
+                        shared.salvar_dados(st.session_state.dados)
+                        st.toast(f"Fornecedor '{setor}' salvo!", icon="💾")
+                        st.rerun()
+            else:
                 c1, c2 = st.columns(2)
                 with c1:
-                    nova_empresa = st.text_input("🏢 Empresa",     value=empresa, key=f"emp_{setor}")
-                    novo_resp    = st.text_input("👤 Responsável", value=resp,    key=f"resp_{setor}")
-                    novo_tel     = st.text_input("📞 Cel/Tel",     value=tel,     key=f"tel_{setor}")
-                    novo_insta   = st.text_input("📸 Instagram",   value=insta,   key=f"ig_{setor}")
+                    st.markdown(f"**🏢 Empresa:** {empresa or '—'}")
+                    st.markdown(f"**👤 Responsável:** {resp or '—'}")
+                    st.markdown(f"**📞 Cel/Tel:** {tel or '—'}")
+                    st.markdown(f"**📸 Instagram:** {insta or '—'}")
                 with c2:
-                    novo_status = st.selectbox(
-                        "📌 Status", shared.STATUS_OPCOES,
-                        index=shared.STATUS_OPCOES.index(status) if status in shared.STATUS_OPCOES else 0,
-                        key=f"st_{setor}"
-                    )
-                    try:
-                        val_atual = float(forn.get("VALOR CONTRATO", 0) or 0)
-                    except (ValueError, TypeError):
-                        val_atual = 0.0
-                    novo_val = st.number_input(
-                        "💰 Valor Contrato (R$)", min_value=0.0, value=val_atual,
-                        format="%.2f", step=100.0, key=f"val_{setor}"
-                    )
-                    try:
-                        he_atual = float(forn.get("HORA EXTRA", 0) or 0)
-                    except (ValueError, TypeError):
-                        he_atual = 0.0
-                    nova_he = st.number_input(
-                        "⏱️ Hora Extra (R$)", min_value=0.0, value=he_atual,
-                        format="%.2f", step=50.0, key=f"he_{setor}"
-                    )
-                    nova_obs = st.text_area(
-                        "📝 Observação",
-                        value=forn.get("OBSERVAÇÃO", "") or "",
-                        height=80, key=f"obs_{setor}"
-                    )
-                if st.form_submit_button("💾 Salvar", type="primary", use_container_width=True):
+                    st.markdown(f"**💰 Valor Contrato:** {val_fmt}")
+                    st.markdown(f"**⏱️ Hora Extra:** {he_fmt}")
+                    obs = forn.get("OBSERVAÇÃO", "") or ""
+                    if obs:
+                        st.markdown(f"**📝 Observação:** {obs}")
+
+        with tab_fotos:
+            st.markdown(f"""
+            <div style="margin-bottom: 8px;">
+                <span style="font-weight: 600; font-size: 0.92rem; color: #0F172A;">Galeria de Trabalhos & Portfólio — {setor}</span>
+                <p style="font-size: 0.82rem; color: #64748B; margin: 2px 0 10px 0;">
+                    Adicione fotos do trabalho deste fornecedor para exposição e acompanhamento do estilo e qualidade.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if can_edit:
+                novas_fotos = st.file_uploader(
+                    f"📸 Adicionar fotos ({setor})",
+                    type=["jpg", "jpeg", "png", "webp"],
+                    accept_multiple_files=True,
+                    key=f"up_fotos_{setor}_{st.session_state.evento_id}",
+                    help="Arraste ou selecione imagens dos trabalhos realizados."
+                )
+                if novas_fotos:
                     item = fornecedores_dict.get(setor, {})
-                    item["EMPRESA"]        = nova_empresa.strip()
-                    item["RESPONSÁVEL"]    = novo_resp.strip()
-                    item["CEL/TEL"]        = novo_tel.strip()
-                    item["INSTAGRAM"]      = novo_insta.strip()
-                    item["STATUS"]         = novo_status
-                    item["VALOR CONTRATO"] = float(novo_val)
-                    item["HORA EXTRA"]     = float(nova_he)
-                    item["OBSERVAÇÃO"]     = nova_obs.strip()
-                    shared.salvar_dados(st.session_state.dados)
-                    st.toast(f"Fornecedor '{setor}' salvo!", icon="💾")
-                    st.rerun()
-        else:
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"**🏢 Empresa:** {empresa or '—'}")
-                st.markdown(f"**👤 Responsável:** {resp or '—'}")
-                st.markdown(f"**📞 Cel/Tel:** {tel or '—'}")
-                st.markdown(f"**📸 Instagram:** {insta or '—'}")
-            with c2:
-                st.markdown(f"**💰 Valor Contrato:** {val_fmt}")
-                st.markdown(f"**⏱️ Hora Extra:** {he_fmt}")
-                obs = forn.get("OBSERVAÇÃO", "") or ""
-                if obs:
-                    st.markdown(f"**📝 Observação:** {obs}")
+                    if "fotos" not in item or not isinstance(item["fotos"], list):
+                        item["fotos"] = []
+                    hashes_existentes = {f.get("hash") for f in item["fotos"] if f.get("hash")}
+                    adicionadas = 0
+                    for f_arq in novas_fotos:
+                        ref = shared.processar_imagem_referencia(f_arq)
+                        if ref["hash"] not in hashes_existentes:
+                            item["fotos"].append(ref)
+                            hashes_existentes.add(ref["hash"])
+                            adicionadas += 1
+                    if adicionadas > 0:
+                        shared.salvar_dados(st.session_state.dados)
+                        st.toast(f"✅ {adicionadas} foto(s) adicionada(s) ao portfólio!", icon="📸")
+                        st.rerun()
+
+            if fotos:
+                cols_grid = st.columns(3)
+                for idx_f, f_item in enumerate(fotos):
+                    with cols_grid[idx_f % 3]:
+                        st.markdown(f"""
+                        <div class="forn-card-foto">
+                            <img src="{f_item['data_url']}" alt="{f_item.get('nome', 'Foto')}">
+                            <div style="font-size: 0.76rem; font-weight: 600; color: #1E293B; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{f_item.get('nome', '')}">
+                                {f_item.get('nome', 'Foto')}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        cf_b1, cf_b2 = st.columns([1.2, 1])
+                        with cf_b1:
+                            if st.button("🔍 Ampliar", key=f"btn_zoom_{setor}_{f_item['id']}", use_container_width=True):
+                                modal_visualizar_arquivo(f_item)
+                        with cf_b2:
+                            if can_edit:
+                                if st.button("🗑️ Excluir", key=f"btn_del_foto_{setor}_{f_item['id']}", use_container_width=True):
+                                    item = fornecedores_dict.get(setor, {})
+                                    item["fotos"] = [f for f in item.get("fotos", []) if f.get("id") != f_item["id"]]
+                                    shared.salvar_dados(st.session_state.dados)
+                                    st.toast("Foto removida!", icon="🗑️")
+                                    st.rerun()
+            else:
+                st.info("📷 Nenhuma foto do trabalho cadastrada ainda. Adicione fotos acima para expor o trabalho deste fornecedor.")
+
+        with tab_docs:
+            st.markdown(f"""
+            <div style="margin-bottom: 8px;">
+                <span style="font-weight: 600; font-size: 0.92rem; color: #0F172A;">📁 Pasta de Contrato & Recibos — {setor}</span>
+                <p style="font-size: 0.82rem; color: #64748B; margin: 2px 0 10px 0;">
+                    Armazene com segurança o contrato de prestação de serviços, recibos de pagamento, notas fiscais e comprovantes.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if can_edit:
+                c_up_d1, c_up_d2 = st.columns([2.2, 1.2])
+                with c_up_d1:
+                    novos_docs = st.file_uploader(
+                        f"📁 Adicionar documento ({setor})",
+                        type=["pdf", "png", "jpg", "jpeg", "docx", "xlsx", "txt"],
+                        accept_multiple_files=True,
+                        key=f"up_docs_{setor}_{st.session_state.evento_id}",
+                        help="Envie contrato assinado, recibos ou notas fiscais."
+                    )
+                with c_up_d2:
+                    tipo_doc_sel = st.selectbox(
+                        "Tipo do documento",
+                        ["Contrato", "Recibo de Pagamento", "Comprovante / NF", "Proposta / Orçamento", "Outro Documento"],
+                        key=f"tipo_doc_sel_{setor}_{st.session_state.evento_id}"
+                    )
+                
+                if novos_docs:
+                    item = fornecedores_dict.get(setor, {})
+                    if "documentos" not in item or not isinstance(item["documentos"], list):
+                        item["documentos"] = []
+                    hashes_existentes = {d.get("hash") for d in item["documentos"] if d.get("hash")}
+                    adicionados_docs = 0
+                    for d_arq in novos_docs:
+                        doc_obj = shared.processar_documento_fornecedor(d_arq, tipo=tipo_doc_sel)
+                        if doc_obj["hash"] not in hashes_existentes:
+                            item["documentos"].append(doc_obj)
+                            hashes_existentes.add(doc_obj["hash"])
+                            adicionados_docs += 1
+                    if adicionados_docs > 0:
+                        shared.salvar_dados(st.session_state.dados)
+                        st.toast(f"✅ {adicionados_docs} documento(s) arquivado(s) na pasta de {setor}!", icon="📁")
+                        st.rerun()
+
+            if documentos:
+                st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+                for idx_d, doc_item in enumerate(documentos):
+                    d_nome = doc_item.get("nome", "Documento")
+                    d_tipo = doc_item.get("tipo", "Documento")
+                    d_tam = doc_item.get("tamanho", 0) // 1024
+                    d_data = doc_item.get("enviado_em", "")
+
+                    ext = d_nome.split(".")[-1].lower() if "." in d_nome else ""
+                    if ext == "pdf":
+                        icon_ext = "📕"
+                    elif ext in ("jpg", "jpeg", "png", "webp"):
+                        icon_ext = "🖼️"
+                    elif ext in ("doc", "docx"):
+                        icon_ext = "📘"
+                    elif ext in ("xls", "xlsx", "csv"):
+                        icon_ext = "📗"
+                    else:
+                        icon_ext = "📄"
+
+                    if "contrato" in d_tipo.lower():
+                        badge_style = "background:#DBEAFE; color:#1E40AF; border:1px solid #BFDBFE;"
+                    elif "recibo" in d_tipo.lower():
+                        badge_style = "background:#D1FAE5; color:#065F46; border:1px solid #6EE7B7;"
+                    elif "comprovante" in d_tipo.lower() or "nf" in d_tipo.lower():
+                        badge_style = "background:#F3E8FF; color:#6B21A8; border:1px solid #E9D5FF;"
+                    else:
+                        badge_style = "background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;"
+
+                    col_card, col_acoes = st.columns([3, 1.4])
+                    with col_card:
+                        st.markdown(f"""
+                        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 1.25rem;">{icon_ext}</span>
+                                    <div>
+                                        <div style="font-size: 0.88rem; font-weight: 600; color: #1E293B;">{d_nome}</div>
+                                        <div style="font-size: 0.74rem; color: #64748B;">{d_tam} KB {f'• Enviado em {d_data}' if d_data else ''}</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; {badge_style}">
+                                    {d_tipo}
+                                </span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col_acoes:
+                        doc_bytes = shared.obter_bytes_documento(doc_item)
+                        cd_b1, cd_b2 = st.columns([1, 1])
+                        with cd_b1:
+                            if doc_bytes:
+                                st.download_button(
+                                    "⬇️ Baixar",
+                                    data=doc_bytes,
+                                    file_name=d_nome,
+                                    mime=doc_item.get("mime", "application/octet-stream"),
+                                    key=f"dl_btn_{setor}_{doc_item['id']}",
+                                    use_container_width=True
+                                )
+                        with cd_b2:
+                            if can_edit:
+                                if st.button("🗑️", key=f"del_doc_btn_{setor}_{doc_item['id']}", help="Excluir documento", use_container_width=True):
+                                    item = fornecedores_dict.get(setor, {})
+                                    item["documentos"] = [d for d in item.get("documentos", []) if d.get("id") != doc_item["id"]]
+                                    shared.salvar_dados(st.session_state.dados)
+                                    st.toast(f"Documento '{d_nome}' excluído da pasta!", icon="🗑️")
+                                    st.rerun()
+            else:
+                st.info("📁 Pasta de documentos vazia. Faça upload do contrato do prestador e de recibos de pagamento para arquivamento.")
 
 # Export button
 st.write("")
