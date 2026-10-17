@@ -7,6 +7,17 @@ def _sort_key(s: str) -> str:
     s_clean = unicodedata.normalize('NFKD', str(s or ""))
     return "".join(c for c in s_clean if not unicodedata.combining(c)).lower().strip()
 
+# ── Mapeamento de cores por status ────────────────────────────────────────
+STATUS_CORES = {
+    "Orçando":                                     {"bg": "#FEE2E2", "text": "#991B1B", "border": "#FECACA",  "emoji": "🔴"},
+    "Dados enviados":                               {"bg": "#DBEAFE", "text": "#1E40AF", "border": "#BFDBFE",  "emoji": "🔵"},
+    "Contrato recebido":                            {"bg": "#FEF3C7", "text": "#92400E", "border": "#FDE68A",  "emoji": "🟡"},
+    "Análise concluída / liberado para assinatura": {"bg": "#F3E8FF", "text": "#6B21A8", "border": "#E9D5FF",  "emoji": "🟣"},
+    "Aguardando assinatura do CONTRATADO":          {"bg": "#ECFEFF", "text": "#155E75", "border": "#A5F3FC",  "emoji": "🩵"},
+    "CONTRATADO":                                   {"bg": "#D1FAE5", "text": "#065F46", "border": "#6EE7B7",  "emoji": "🟢"},
+    "Não haverá":                                   {"bg": "#F1F5F9", "text": "#475569", "border": "#CBD5E1",  "emoji": "⚪"},
+}
+
 evento_atual = shared.get_evento_atual()
 if not evento_atual:
     st.info("Por favor, selecione ou acesse um evento válido.")
@@ -14,7 +25,96 @@ if not evento_atual:
 
 is_admin = st.session_state.tipo_usuario == "admin"
 
-st.markdown(f"### Alinhamento com Fornecedores — {evento_atual['noivos']}")
+dias_restantes = shared.calcular_dias_restantes_evento(evento_atual)
+dias_txt = shared.formatar_texto_dias_restantes(dias_restantes)
+data_evento_str = evento_atual.get("data", "")
+
+st.markdown(
+    f"### Alinhamento com Fornecedores — {evento_atual['noivos']} &nbsp;"
+    f"<span style='font-size:0.84rem; font-weight:500; color:#166534; background:#DCFCE7; border:1px solid #86EFAC; border-radius:14px; padding:3px 12px; vertical-align: middle; display: inline-block;'>"
+    f"⏳ {dias_txt.capitalize()}{f' ({data_evento_str})' if data_evento_str else ''}</span>",
+    unsafe_allow_html=True
+)
+
+# ── Central de Avisos WhatsApp ──────────────────────────────────────────────
+with st.expander(f"📲 Central de Avisos WhatsApp — Contagem Regressiva ({dias_txt})", expanded=False):
+    st.markdown(f"""
+    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
+        <div style="font-weight: 700; color: #166534; font-size: 0.98rem; margin-bottom: 3px;">
+            📲 Automação de Mensagens para Fornecedores via WhatsApp
+        </div>
+        <div style="font-size: 0.85rem; color: #15803D;">
+            Dispare lembretes com 1 clique para os fornecedores cadastrados informando que <strong>{dias_txt}</strong> para o grande dia{f' (<strong>{data_evento_str}</strong>)' if data_evento_str else ''}.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    c_m1, c_m2 = st.columns([1.5, 2.5])
+    with c_m1:
+        modelo_central = st.selectbox(
+            "Modelo da Mensagem",
+            [
+                "📅 Contagem Regressiva & Alinhamento (Padrão)",
+                "⏰ Confirmação de Horários & Chegada",
+                "📝 Pendências Contratuais & Documentos"
+            ],
+            key="central_mod_wa"
+        )
+        tipo_central = "padrao"
+        if "Horários" in modelo_central:
+            tipo_central = "horarios"
+        elif "Pendências" in modelo_central:
+            tipo_central = "pendencias"
+
+        apenas_contratados = st.checkbox(
+            "Filtrar apenas fornecedores com status 'CONTRATADO'",
+            value=False,
+            key="chk_apenas_contratados"
+        )
+
+    with c_m2:
+        exemplo_forn = {"SETOR": "Exemplo (Fotografia)", "EMPRESA": "Estúdio Parceiro", "RESPONSÁVEL": "Nome do Fornecedor"}
+        msg_preview_central = shared.gerar_mensagem_whatsapp_fornecedor(exemplo_forn, evento_atual, modelo=tipo_central)
+        st.caption("👀 **Prévia do modelo selecionado (variáveis são preenchidas automaticamente para cada fornecedor):**")
+        st.text_area("Prévia", value=msg_preview_central, height=120, disabled=True, label_visibility="collapsed")
+
+    # Lista de fornecedores com telefone cadastrado
+    todos_forns = evento_atual.get("fornecedores", [])
+    forns_com_tel = [
+        f for f in todos_forns
+        if shared.limpar_telefone_whatsapp(f.get("CEL/TEL", ""))
+    ]
+    if apenas_contratados:
+        forns_com_tel = [f for f in forns_com_tel if f.get("STATUS") == "CONTRATADO"]
+
+    st.markdown(f"**Fornecedores prontos para envio ({len(forns_com_tel)} encontrados):**")
+    if not forns_com_tel:
+        st.info("Nenhum fornecedor com telefone válido encontrado. Preencha o campo Cel/Tel nos cards abaixo.")
+    else:
+        for item_f in forns_com_tel:
+            s_nome = item_f.get("SETOR", "")
+            s_emp = item_f.get("EMPRESA", "")
+            s_resp = item_f.get("RESPONSÁVEL", "")
+            s_tel = item_f.get("CEL/TEL", "")
+            s_st = item_f.get("STATUS", "Orçando")
+            s_cor = STATUS_CORES.get(s_st, {"bg": "#F8FAFC", "text": "#334155", "border": "#CBD5E1", "emoji": "❔"}) if 'STATUS_CORES' in locals() else {"bg": "#F8FAFC", "text": "#334155", "border": "#CBD5E1", "emoji": "⚪"}
+
+            c_f_info, c_f_st, c_f_act = st.columns([3.2, 1.3, 1.5])
+            with c_f_info:
+                st.markdown(f"**{s_nome}** — {s_emp or s_resp or 'Sem nome'}")
+                st.caption(f"📞 WhatsApp: `{s_tel}` {f'• Resp: {s_resp}' if s_resp else ''}")
+            with c_f_st:
+                st.markdown(
+                    f'<span style="background:{s_cor["bg"]};color:{s_cor["text"]};border:1px solid {s_cor["border"]};'
+                    f'border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;">{s_cor["emoji"]} {s_st}</span>',
+                    unsafe_allow_html=True
+                )
+            with c_f_act:
+                msg_indiv = shared.gerar_mensagem_whatsapp_fornecedor(item_f, evento_atual, modelo=tipo_central)
+                link_wa_indiv = shared.gerar_link_whatsapp(s_tel, msg_indiv)
+                st.link_button("📲 Enviar WhatsApp", url=link_wa_indiv, use_container_width=True)
+            st.markdown("<hr style='margin: 4px 0 8px 0; border: none; border-top: 1px solid #F1F5F9;'>", unsafe_allow_html=True)
+
 
 # Dialog para visualização ampliada de fotos e documentos
 if hasattr(st, "dialog"):
@@ -225,6 +325,75 @@ for forn in df_view.to_dict("records"):
                     obs = forn.get("OBSERVAÇÃO", "") or ""
                     if obs:
                         st.markdown(f"**📝 Observação:** {obs}")
+
+            # ── Seção Automação WhatsApp (Aviso de Contagem Regressiva) ───
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            tel_limpo = shared.limpar_telefone_whatsapp(tel)
+
+            if tel_limpo:
+                st.markdown(f"""
+                <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-left: 4px solid #22C55E; border-radius: 8px; padding: 12px 14px; margin-top: 10px; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <div style="font-weight: 700; color: #0F172A; font-size: 0.90rem;">
+                                📲 Automação WhatsApp — Aviso de Contagem Regressiva
+                            </div>
+                            <div style="font-size: 0.80rem; color: #475569; margin-top: 3px;">
+                                ⏳ <strong>{dias_txt}</strong> para o evento ({data_evento_str or 'Data a definir'}) &nbsp;•&nbsp; 
+                                📞 WhatsApp: <strong style="color: #166534;">{tel}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                with st.popover(f"📲 Preparar e Enviar Aviso via WhatsApp ({tel})", use_container_width=True):
+                    st.markdown(f"**Disparo de Mensagem — {setor}**")
+                    st.caption(f"Destinatário: **{resp or empresa or setor}** &nbsp;•&nbsp; WhatsApp: **{tel}**")
+
+                    mod_opcoes = [
+                        "📅 Contagem Regressiva & Alinhamento (Padrão)",
+                        "⏰ Confirmação de Horários & Chegada",
+                        "📝 Pendências Contratuais & Documentos"
+                    ]
+                    mod_escolhido = st.selectbox(
+                        "Modelo da Mensagem:",
+                        mod_opcoes,
+                        key=f"mod_forn_{setor}_{st.session_state.evento_id}"
+                    )
+
+                    chave_mod = "padrao"
+                    if "Horários" in mod_escolhido:
+                        chave_mod = "horarios"
+                    elif "Pendências" in mod_escolhido:
+                        chave_mod = "pendencias"
+
+                    msg_gerada = shared.gerar_mensagem_whatsapp_fornecedor(forn, evento_atual, modelo=chave_mod)
+
+                    msg_final = st.text_area(
+                        "Mensagem pronta (você pode personalizar livremente antes de enviar):",
+                        value=msg_gerada,
+                        height=160,
+                        key=f"txt_msg_forn_{setor}_{st.session_state.evento_id}"
+                    )
+
+                    link_wa_btn = shared.gerar_link_whatsapp(tel, msg_final)
+
+                    st.link_button(
+                        "🚀 Abrir no WhatsApp e Enviar Mensagem",
+                        url=link_wa_btn,
+                        type="primary",
+                        use_container_width=True
+                    )
+            else:
+                st.markdown(f"""
+                <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 10px 14px; margin-top: 10px; margin-bottom: 8px;">
+                    <div style="font-weight: 600; color: #92400E; font-size: 0.86rem;">📲 Automação WhatsApp — Aviso de Contagem Regressiva</div>
+                    <div style="font-size: 0.80rem; color: #B45309; margin-top: 2px;">
+                        ⚠️ Para enviar o aviso automático com a contagem de dias restantes via WhatsApp, cadastre o número no campo <strong>'Cel/Tel'</strong> (com DDD) e salve os dados do fornecedor.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
         with tab_fotos:
             st.markdown(f"""

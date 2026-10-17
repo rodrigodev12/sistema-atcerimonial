@@ -945,3 +945,117 @@ def gerar_slug_token(noivos: str, eventos: dict) -> str:
         if slug not in tokens_existentes:
             return slug
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUTOMAÇÃO DE WHATSAPP PARA FORNECEDORES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def calcular_dias_restantes_evento(evento: dict):
+    """Retorna o número de dias restantes para o evento ou None se inválido."""
+    data_str = evento.get("data")
+    if not data_str:
+        return None
+    try:
+        from datetime import datetime
+        try:
+            import pytz
+            fuso = pytz.timezone('America/Sao_Paulo')
+            hoje = datetime.now(fuso).date()
+        except Exception:
+            hoje = datetime.now().date()
+            
+        data_limpa = str(data_str).strip()
+        data_evento = datetime.strptime(data_limpa, "%d/%m/%Y").date()
+        return (data_evento - hoje).days
+    except Exception:
+        return None
+
+
+def formatar_texto_dias_restantes(dias):
+    """Retorna descrição textual amigável da contagem de dias."""
+    if dias is None:
+        return "data a definir"
+    if dias > 1:
+        return f"faltam {dias} dias"
+    elif dias == 1:
+        return "falta apenas 1 dia (é amanhã!)"
+    elif dias == 0:
+        return "é HOJE o grande dia!"
+    elif dias == -1:
+        return "o evento ocorreu ontem"
+    else:
+        return f"o evento ocorreu há {abs(dias)} dias"
+
+
+def limpar_telefone_whatsapp(tel: str) -> str:
+    """Higieniza número de telefone para o padrão internacional do WhatsApp."""
+    if not tel:
+        return ""
+    digitos = re.sub(r'\D', '', str(tel)).lstrip('0')
+    if not digitos:
+        return ""
+    # Se tem 10 ou 11 dígitos (DDD + número), prefixa com 55 (Brasil)
+    if len(digitos) in (10, 11):
+        return f"55{digitos}"
+    # Se já tem 12 ou 13 dígitos e começa com 55
+    if len(digitos) in (12, 13) and digitos.startswith("55"):
+        return digitos
+    return digitos
+
+
+def gerar_mensagem_whatsapp_fornecedor(fornecedor: dict, evento: dict, modelo: str = "padrao") -> str:
+    """Gera texto de mensagem pronto e formatado para o WhatsApp do fornecedor."""
+    setor = fornecedor.get("SETOR", "") or "Fornecedor"
+    empresa = fornecedor.get("EMPRESA", "") or ""
+    resp = fornecedor.get("RESPONSÁVEL", "") or ""
+    nome_destinatario = resp if resp else (empresa if empresa else f"Equipe {setor}")
+    
+    noivos = evento.get("noivos", "Casamento")
+    data_ev = evento.get("data", "")
+    dias = calcular_dias_restantes_evento(evento)
+    dias_txt = formatar_texto_dias_restantes(dias)
+    
+    if modelo == "horarios":
+        msg = (
+            f"Olá, {nome_destinatario}! Tudo bem? ✨\n\n"
+            f"Aqui é da equipe de assessoria e cerimonial do *{noivos}*.\n\n"
+            f"Passando para lembrar que *{dias_txt}* para o grande evento (Data: *{data_ev}*)! 💍📅\n\n"
+            f"Estamos alinhando o roteiro técnico e a logística do setor *{setor}*. Gostaríamos de confirmar com você:\n"
+            f"• Horário previsto de chegada e início da montagem\n"
+            f"• Quantidade de profissionais da sua equipe que estarão presentes\n"
+            f"• Alguma necessidade técnica de energia, espaço ou logística no local\n\n"
+            f"Assim que possível, nos dê esse retorno para integrarmos ao roteiro oficial. Muito obrigado pela parceria e dedicação! 🤝✨"
+        )
+    elif modelo == "pendencias":
+        msg = (
+            f"Olá, {nome_destinatario}! Tudo bem? 📝\n\n"
+            f"Aqui é da equipe de assessoria do *{noivos}*.\n\n"
+            f"Lembrando que *{dias_txt}* para a data do casamento (*{data_ev}*)! 💍\n\n"
+            f"Estamos realizando a conferência final dos contratos, dados e comprovantes do setor *{setor}*. "
+            f"Caso haja alguma pendência documental ou contratual para regularizarmos, favor nos enviar por aqui.\n\n"
+            f"Estamos à disposição para o que precisar! 🤝"
+        )
+    else:  # padrao
+        msg = (
+            f"Olá, {nome_destinatario}! Tudo bem? ✨\n\n"
+            f"Aqui é da equipe de assessoria e cerimonial do *{noivos}*.\n\n"
+            f"Passando para avisar que *{dias_txt}* para o grande dia! 💍📅\n\n"
+            f"🗓️ *Data do Evento:* {data_ev}\n"
+            f"🏢 *Setor / Serviço:* {setor}\n\n"
+            f"Estamos alinhando todos os detalhes para garantir que tudo ocorra com perfeição e pontualidade. "
+            f"Se você precisar de qualquer informação, apoio ou alinhamento com a nossa equipe, estamos à total disposição!\n\n"
+            f"Contamos com você para tornar esse momento mágico e inesquecível! 🌟"
+        )
+    return msg
+
+
+def gerar_link_whatsapp(telefone: str, mensagem: str) -> str:
+    """Gera o link universal da API do WhatsApp com mensagem pré-codificada."""
+    import urllib.parse
+    num_limpo = limpar_telefone_whatsapp(telefone)
+    if not num_limpo:
+        return ""
+    texto_encoded = urllib.parse.quote(mensagem)
+    return f"https://api.whatsapp.com/send?phone={num_limpo}&text={texto_encoded}"
+
+
